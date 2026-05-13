@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-white font-outfit antialiased;
+    margin: 0;
+    background: radial-gradient(circle at top right, #1a0505, #0D0D0D 40%),
+                radial-gradient(circle at bottom left, #051a24, #0D0D0D 40%);
+    background-attachment: fixed;
+  }
+  
+  ::selection {
+    background-color: #D32F2F;
+    color: white;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+  }
+  .neon-glow-red {
+    box-shadow: 0 0 15px rgba(255, 82, 82, 0.4), inset 0 0 10px rgba(255, 82, 82, 0.1);
+  }
+  .neon-glow-blue {
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.4), inset 0 0 10px rgba(33, 150, 243, 0.1);
+  }
+  .neon-glow-yellow {
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.4), inset 0 0 10px rgba(255, 193, 7, 0.1);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1); 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,82,82,0.6); 
+}
+
+/* Global button hover pulse */
+button:active {
+  transform: scale(0.95);
+}
