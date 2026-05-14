@@ -102,7 +102,7 @@ export default function AdminLogin() {
             <input 
               required type="email" value={email} onChange={e => setEmail(e.target.value)} 
               className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red" 
-              placeholder="admin@hotel.com" 
+              placeholder="admin@example.com" 
             />
           </div>
           <div>
@@ -128,11 +128,6 @@ export default function AdminLogin() {
           </button>
         </div>
 
-        {isLogin && (
-          <p className="text-xs text-center text-text-secondary mt-6 relative z-10 p-3 bg-black/40 rounded-lg border border-card-border">
-            <span className="font-bold text-white">Hackathon Demo:</span><br/>Use <span className="text-info">admin@crisissync.com</span> / <span className="text-info">admin123</span>
-          </p>
-        )}
       </div>
     </div>
   );
