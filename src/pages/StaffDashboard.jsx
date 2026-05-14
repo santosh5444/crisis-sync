@@ -162,7 +162,7 @@ export default function StaffDashboard() {
           </button>
           <div>
             <h1 className="text-xl font-bold">{user.name}</h1>
-            <p className="text-sm text-text-secondary">{user.profession} • {user.floor}</p>
+            <p className="text-sm text-text-secondary">{user.facilityType || 'Facility'} • {user.profession} • {user.floor}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

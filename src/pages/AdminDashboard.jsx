@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { ref, onValue, set, push, serverTimestamp, runTransaction } from 'firebase/database';
+import { ref, onValue, set, push, serverTimestamp, runTransaction, get, query, orderByChild, equalTo } from 'firebase/database';
 import { DEFAULT_BUILDING_ID } from '../utils/constants';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -24,8 +24,11 @@ export default function AdminDashboard() {
   const [guests, setGuests] = useState([]);
   const [staff, setStaff] = useState([]);
   const [broadcastMsg, setBroadcastMsg] = useState('');
-  
   const buildingId = localStorage.getItem('adminBuildingId') || DEFAULT_BUILDING_ID;
+  const adminProfile = {
+    buildingName: localStorage.getItem('adminBuildingName') || 'Crisis Facility',
+    facilityType: localStorage.getItem('adminFacilityType') || 'Hospital'
+  };
 
   // Logout
   const handleLogout = async () => {
@@ -35,6 +38,9 @@ export default function AdminDashboard() {
       console.error("Firebase logout failed", error);
     }
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminBuildingId');
+    localStorage.removeItem('adminFacilityType');
+    localStorage.removeItem('adminBuildingName');
     navigate('/admin/login');
   };
 
@@ -181,8 +187,15 @@ export default function AdminDashboard() {
     <div className="min-h-screen flex bg-dark-bg text-white font-inter">
       {/* Sidebar */}
       <aside className="w-64 bg-card-bg border-r border-card-border flex flex-col hidden md:flex">
-        <div className="p-6 border-b border-card-border flex items-center gap-2 text-primary-red font-bold text-xl">
-          <ShieldAlert /> CrisisSync 
+        <div className="p-6 border-b border-card-border flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-primary-red font-bold text-xl">
+            <ShieldAlert /> CrisisSync
+          </div>
+          {adminProfile && (
+            <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              {adminProfile.buildingName} • {adminProfile.facilityType}
+            </div>
+          )}
         </div>
         <nav className="flex-1 p-4 flex flex-col gap-2">
           {TABS.map(tab => {
@@ -503,11 +516,15 @@ export default function AdminDashboard() {
 
               {/* Guest QR */}
               <div className="bg-card-bg p-6 rounded-xl border border-card-border flex flex-col items-center">
-                <h3 className="font-bold mb-4 text-white">Patient Fast-Track</h3>
+                <h3 className="font-bold mb-4 text-white">
+                  {adminProfile?.facilityType === 'Hotel' ? 'Guest Fast-Track' : 'Patient Fast-Track'}
+                </h3>
                 <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
                   <QRCodeSVG value={`${window.location.origin}/onboarding/${buildingId}?role=guest`} size={150} level={"H"} fgColor={"#0D0D0D"} bgColor={"#FFFFFF"} />
                 </div>
-                <p className="text-xs text-text-secondary">Goes straight to Patient form</p>
+                <p className="text-xs text-text-secondary">
+                  Goes straight to {adminProfile?.facilityType === 'Hotel' ? 'Guest' : 'Patient'} form
+                </p>
               </div>
 
               {/* Staff QR */}

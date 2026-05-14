@@ -6,6 +6,7 @@ import { ShieldCheck, AlertCircle, Search, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
 import ReportItemModal from '../components/ReportItemModal';
+import { HOSPITAL_SERVICES, HOTEL_SERVICES } from '../utils/constants';
 
 export default function GuestDashboard() {
   const { user, setUser } = useAppContext();
@@ -212,20 +213,13 @@ export default function GuestDashboard() {
         
         {/* General Services Section */}
         <section>
-          <h3 className="font-bold mb-4 flex items-center gap-2">Room & Medical Services</h3>
+          <h3 className="font-bold mb-4 flex items-center gap-2">
+            {user?.facilityType === 'Hotel' ? 'Guest Services' : 'Room & Medical Services'}
+          </h3>
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Bring Stretcher', icon: '🛏️' },
-              { label: 'Doctor Emergency', icon: '🩺' },
-              { label: 'Clean Up', icon: '🧹' },
-              { label: 'General Medical Help', icon: '🩹' },
-              { label: 'Bathroom Help', icon: '🚻' },
-              { label: 'Need Wheelchair', icon: '♿' },
-              { label: 'Need Water / Food', icon: '🥤' },
-              { label: 'Medication Request', icon: '💊' },
-            ].map(service => (
+            {(user?.facilityType === 'Hotel' ? HOTEL_SERVICES : HOSPITAL_SERVICES).map(service => (
               <button 
-                key={service.label}
+                key={service.id}
                 onClick={() => handleServiceRequest(service.label)}
                 className="bg-card-bg border border-card-border hover:border-primary-red hover:bg-dark-bg p-4 rounded-xl flex flex-col items-center justify-center text-center transition gap-2"
               >

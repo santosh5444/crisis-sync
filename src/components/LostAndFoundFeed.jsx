@@ -13,7 +13,7 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
   const [matches, setMatches] = useState({});
 
   useEffect(() => {
-    const activeBuildingId = isAdmin ? (localStorage.getItem('adminBuildingId') || 'HOTEL_HYD_001') : user?.buildingId;
+    const activeBuildingId = isAdmin ? localStorage.getItem('adminBuildingId') : user?.buildingId;
     if (!activeBuildingId) return;
     const itemsRef = ref(db, `lostAndFound/${activeBuildingId}`);
     
@@ -164,7 +164,7 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
                         <button 
                           onClick={() => {
                             import('firebase/database').then(({ ref, update }) => {
-                              const activeBuildingId = localStorage.getItem('adminBuildingId') || 'HOTEL_HYD_001';
+                              const activeBuildingId = localStorage.getItem('adminBuildingId');
                               update(ref(db, `lostAndFound/${activeBuildingId}/${item.itemId}`), { 
                                 status: 'RESOLVED'
                               });

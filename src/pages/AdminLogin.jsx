@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { loginAdmin, registerAdmin } from '../firebase/auth';
 import toast from 'react-hot-toast';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { ref, set, get } from 'firebase/database';
+import { db } from '../firebase/config';
 
 export default function AdminLogin() {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,31 +14,35 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const [buildingName, setBuildingName] = useState('');
+  const [facilityType, setFacilityType] = useState('Hospital');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
-    // For Hackathon Demo: Allow bypass if mock credentials are used
-    if (isLogin && email === 'admin@crisissync.com' && password === 'admin123') {
-      localStorage.setItem('adminToken', 'mock_admin_token');
-      localStorage.setItem('adminBuildingId', 'HOTEL_HYD_001');
-      toast.success("Admin Logged In (Demo Mode)");
-      navigate('/admin');
-      return;
-    }
-
     try {
-      const { db } = await import('../firebase/config');
-      const { ref, set, get } = await import('firebase/database');
-
       if (isLogin) {
         const userCred = await loginAdmin(email, password);
         const snap = await get(ref(db, `admins/${userCred.user.uid}`));
+        
         if (snap.exists()) {
-          localStorage.setItem('adminBuildingId', snap.val().buildingId);
+          const bId = snap.val().buildingId;
+          const fType = snap.val().facilityType || 'Hospital';
+          const bName = snap.val().buildingName || 'Facility';
+          
+          localStorage.setItem('adminBuildingId', bId);
+          localStorage.setItem('adminFacilityType', fType);
+          localStorage.setItem('adminBuildingName', bName);
+
+          // Sync public metadata
+          await set(ref(db, `buildingMetadata/${bId}`), {
+            buildingName: bName,
+            facilityType: fType
+          });
         } else {
-          localStorage.setItem('adminBuildingId', 'HOTEL_HYD_001'); // legacy fallback
+          toast.error("Account metadata not found. Please register again.");
+          setLoading(false);
+          return;
         }
         toast.success("Welcome, Commander.");
       } else {
@@ -48,12 +54,23 @@ export default function AdminLogin() {
         const userCred = await registerAdmin(email, password);
         const uniqueId = buildingName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 6) + '_' + Math.floor(1000 + Math.random() * 9000);
         
+        // Save Admin Profile
         await set(ref(db, `admins/${userCred.user.uid}`), {
           email,
           buildingName: buildingName.trim(),
+          facilityType,
           buildingId: uniqueId
         });
+        
+        // Save public metadata for Guest/Staff Onboarding
+        await set(ref(db, `buildingMetadata/${uniqueId}`), {
+          buildingName: buildingName.trim(),
+          facilityType
+        });
+
         localStorage.setItem('adminBuildingId', uniqueId);
+        localStorage.setItem('adminFacilityType', facilityType);
+        localStorage.setItem('adminBuildingName', buildingName.trim());
         toast.success("Admin Account Created & Verified.");
       }
       localStorage.setItem('adminToken', 'firebase_admin_token');
@@ -88,14 +105,27 @@ export default function AdminLogin() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10">
           {!isLogin && (
-            <div>
-              <label className="block text-sm text-text-secondary mb-1">Building/Facility Name</label>
-              <input 
-                required={!isLogin} type="text" value={buildingName} onChange={e => setBuildingName(e.target.value)} 
-                className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red" 
-                placeholder="e.g. Apollo Hospital" 
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Facility Type</label>
+                <select 
+                  value={facilityType} 
+                  onChange={e => setFacilityType(e.target.value)} 
+                  className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red mb-2"
+                >
+                  <option value="Hospital">Hospital / Medical Center</option>
+                  <option value="Hotel">Hotel / Resort</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Building/Facility Name</label>
+                <input 
+                  required={!isLogin} type="text" value={buildingName} onChange={e => setBuildingName(e.target.value)} 
+                  className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red" 
+                  placeholder="e.g. Apollo Hospital / Hyatt Hotel" 
+                />
+              </div>
+            </>
           )}
           <div>
             <label className="block text-sm text-text-secondary mb-1">Admin Email</label>
@@ -127,7 +157,6 @@ export default function AdminLogin() {
             {isLogin ? "Need a new facility account? Sign Up" : "Already an Admin? Log In"}
           </button>
         </div>
-
       </div>
     </div>
   );
