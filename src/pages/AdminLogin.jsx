@@ -93,7 +93,7 @@ export default function AdminLogin() {
               <input 
                 required={!isLogin} type="text" value={buildingName} onChange={e => setBuildingName(e.target.value)} 
                 className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red" 
-                placeholder="e.g. Apollo Hospital / Hyatt Hotel" 
+                placeholder="e.g. Apollo Hospital" 
               />
             </div>
           )}
