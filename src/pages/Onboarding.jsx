@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { HOSPITAL_PROFESSIONS, HOTEL_PROFESSIONS } from '../utils/constants';
+import { HOSPITAL_PROFESSIONS } from '../utils/constants';
 import { useAppContext } from '../context/AppContext';
 import { ref, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { db } from '../firebase/config';
@@ -38,7 +38,7 @@ export default function Onboarding() {
           const adminData = snap.val();
           setFacilityType(adminData.facilityType || 'Hospital');
           setBuildingName(adminData.buildingName || 'Facility');
-          setProfession(adminData.facilityType === 'Hotel' ? HOTEL_PROFESSIONS[0] : HOSPITAL_PROFESSIONS[0]);
+          setProfession(HOSPITAL_PROFESSIONS[0]);
         } else {
           // Fallback if not found
           setProfession(HOSPITAL_PROFESSIONS[0]);
@@ -209,7 +209,7 @@ export default function Onboarding() {
               <div>
                 <label className="block text-sm text-text-secondary mb-1">Profession / Role</label>
                 <select required value={profession} onChange={e => setProfession(e.target.value)} className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-info">
-                  {(facilityType === 'Hotel' ? HOTEL_PROFESSIONS : HOSPITAL_PROFESSIONS).map(prof => (
+                  {HOSPITAL_PROFESSIONS.map(prof => (
                     <option key={prof} value={prof}>{prof}</option>
                   ))}
                 </select>
