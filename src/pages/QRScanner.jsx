@@ -12,29 +12,42 @@ export default function QRScanner() {
   const navigate = useNavigate();
   const html5QrCodeRef = useRef(null);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
-    // Create instance if it doesn't exist (e.g. if camera failed to start)
-    if (!html5QrCodeRef.current) {
-      html5QrCodeRef.current = new Html5Qrcode("reader");
-    }
+    try {
+      // 1. Stop camera if running
+      if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+        await html5QrCodeRef.current.stop();
+      }
 
-    html5QrCodeRef.current.scanFile(file, false)
-      .then(decodedText => {
-        setScanResult(decodedText);
-        let target = decodedText;
-        if (decodedText.includes('/onboarding/')) {
-          const parts = decodedText.split('/onboarding/');
-          target = parts[parts.length - 1];
-        }
+      // 2. Create instance if needed
+      if (!html5QrCodeRef.current) {
+        html5QrCodeRef.current = new Html5Qrcode("reader");
+      }
+
+      // 3. Scan the file
+      const decodedText = await html5QrCodeRef.current.scanFile(file, true);
+      setScanResult(decodedText);
+      
+      // 4. Robust ID Extraction
+      let target = decodedText;
+      if (decodedText.includes('/onboarding/')) {
+        const urlObj = new URL(decodedText.startsWith('http') ? decodedText : `${window.location.origin}${decodedText}`);
+        const pathParts = urlObj.pathname.split('/');
+        target = pathParts[pathParts.indexOf('onboarding') + 1];
+        
+        // Preserve query params if any
+        const search = urlObj.search;
+        setTimeout(() => navigate(`/onboarding/${target}${search}`), 1000);
+      } else {
         setTimeout(() => navigate(`/onboarding/${target}`), 1000);
-      })
-      .catch(err => {
-        console.error("Error scanning file", err);
-        alert("Could not find a valid QR code in that image.");
-      });
+      }
+    } catch (err) {
+      console.error("Error scanning file", err);
+      alert("Could not find a valid QR code in that image. Please try another photo.");
+    }
   };
 
   useEffect(() => {

@@ -11,7 +11,7 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className="flex justify-between items-center p-6 bg-card-bg border-b border-card-border">
         <div className="text-2xl font-bold text-primary-red tracking-tight flex items-center gap-2">
-          <ShieldAlert size={32} /> CrisisSync
+          <ShieldAlert size={32} /> SENTINEL
         </div>
         <button onClick={() => navigate('/admin/login')} className="text-text-secondary hover:text-white font-semibold">
           Admin Login
@@ -22,10 +22,10 @@ export default function LandingPage() {
       <section className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-red/20 via-dark-bg to-dark-bg">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
-            Crisis Happens in <span className="text-alert-red">Seconds</span>.<br/>So Does CrisisSync.
+            Crisis Happens in <span className="text-alert-red">Seconds</span>.<br/>So Does SENTINEL.
           </h1>
           <p className="text-xl md:text-2xl text-text-secondary mb-10 max-w-3xl mx-auto">
-            A QR-based emergency coordination system that instantly bridges Patients, Medical Staff, and First Responders.
+            A QR-based emergency coordination system that instantly bridges Hotel Guests, Staff, and First Responders.
           </p>
           <div className="flex gap-6 justify-center">
             <button 
@@ -49,11 +49,11 @@ export default function LandingPage() {
 
       {/* Problem Section */}
       <section className="py-24 px-4 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl font-bold mb-12">The Healthcare Emergency Gap</h2>
+        <h2 className="text-3xl font-bold mb-12">The Hospitality Emergency Gap</h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-card-bg p-8 rounded-xl border border-card-border">
             <h3 className="text-xl font-bold text-alert-red mb-4">Guests are Stranded</h3>
-            <p className="text-text-secondary">During a critical event, a patient or visitor has no direct line to the exact medical staff on their floor.</p>
+            <p className="text-text-secondary">During a fire or threat, a guest has no direct line to the exact security guard on their floor.</p>
           </div>
           <div className="bg-card-bg p-8 rounded-xl border border-card-border">
             <h3 className="text-xl font-bold text-warning mb-4">Staff Gets Info Late</h3>
@@ -74,7 +74,7 @@ export default function LandingPage() {
             <div className="flex-1 text-center relative z-10">
               <div className="w-20 h-20 bg-dark-bg border-2 border-primary-red rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">1</div>
               <h3 className="text-xl font-bold mb-2">Scan QR</h3>
-              <p className="text-text-secondary">Patients, Visitors, and Medical Staff scan a building-specific QR code upon entry. No app download needed.</p>
+              <p className="text-text-secondary">Guests and Staff scan a building-specific QR code upon entry. No app download needed.</p>
             </div>
             <div className="flex-1 text-center relative z-10">
               <div className="w-20 h-20 bg-dark-bg border-2 border-warning rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">2</div>
@@ -106,7 +106,7 @@ export default function LandingPage() {
       <footer className="bg-card-bg border-t border-card-border py-12 text-center">
         <h2 className="text-2xl font-bold mb-6">Protect Your Venue Today</h2>
         <button onClick={() => navigate('/admin/login')} className="bg-white text-dark-bg px-8 py-3 rounded-lg font-bold hover:bg-gray-200 transition">
-          Partner with CrisisSync
+          Partner with SENTINEL
         </button>
       </footer>
     </div>

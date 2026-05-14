@@ -12,7 +12,7 @@ export async function analyzeCrisis(type, description, location) {
     const prompt = `Emergency type: ${type}
 Description: ${description || 'None provided'}
 Location: ${location}
-Building: Hospital/Medical facility
+Building: Hotel/Hospitality venue
 
 Analyze and return JSON exactly matching this format:
 {

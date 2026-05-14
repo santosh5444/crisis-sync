@@ -1,4 +1,4 @@
-# CrisisSync: Hospital Crisis Response Platform
+# SENTINEL: Multi-Facility Crisis Response Platform
 
 A powerful crisis management solution designed specifically for **Hospitals** and **Medical Centers**. CrisisSync provides real-time SOS tracking, medical staff coordination, and patient assistance in high-pressure environments.
 
