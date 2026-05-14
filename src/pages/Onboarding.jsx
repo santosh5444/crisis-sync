@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { HOSPITAL_PROFESSIONS, HOTEL_PROFESSIONS } from '../utils/constants';
+import { HOSPITAL_PROFESSIONS } from '../utils/constants';
 import { useAppContext } from '../context/AppContext';
 import { ref, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { db } from '../firebase/config';
@@ -37,7 +37,7 @@ export default function Onboarding() {
           const adminData = snap.val();
           setFacilityType(adminData.facilityType || 'Hospital');
           setBuildingName(adminData.buildingName || 'Facility');
-          setProfession(adminData.facilityType === 'Hotel' ? HOTEL_PROFESSIONS[0] : HOSPITAL_PROFESSIONS[0]);
+          setProfession(HOSPITAL_PROFESSIONS[0]);
         } else {
           // Fallback if not found
           setProfession(HOSPITAL_PROFESSIONS[0]);
@@ -127,10 +127,10 @@ export default function Onboarding() {
           >
             <div className="text-6xl mb-4 drop-shadow-md">🛌</div>
             <h3 className="text-2xl font-bold text-white mb-2">
-              {facilityType === 'Hotel' ? 'Hotel Guest' : 'Patient / Visitor'}
+              Patient / Visitor
             </h3>
             <p className="text-text-secondary">
-              {facilityType === 'Hotel' ? 'I am staying at this hotel.' : 'I am receiving care or visiting this facility.'}
+              I am receiving care or visiting this facility.
             </p>
           </motion.div>
           <motion.div 
@@ -139,12 +139,12 @@ export default function Onboarding() {
             onClick={() => setRole('staff')}
             className="bg-card-bg border border-card-border p-10 rounded-xl cursor-pointer hover:border-info transition flex flex-col items-center text-center shadow-lg hover:shadow-info/20"
           >
-            <div className="text-6xl mb-4 drop-shadow-md">{facilityType === 'Hotel' ? '🛎️' : '🧑‍⚕️'}</div>
+            <div className="text-6xl mb-4 drop-shadow-md">🧑‍⚕️</div>
             <h3 className="text-2xl font-bold text-white mb-2">
-              {facilityType === 'Hotel' ? 'Hotel Staff' : 'Medical Staff'}
+              Medical Staff
             </h3>
             <p className="text-text-secondary">
-              {facilityType === 'Hotel' ? 'I work here and assist guests.' : 'I work here and respond to medical requests & emergencies.'}
+              I work here and respond to medical requests & emergencies.
             </p>
           </motion.div>
         </div>
@@ -159,9 +159,7 @@ export default function Onboarding() {
           ← Back to roles
         </button>
         <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
-          {role === 'guest' 
-            ? (facilityType === 'Hotel' ? '🛌 Guest Check-In' : '🛌 Patient/Visitor Entry')
-            : (facilityType === 'Hotel' ? '🛎️ Staff Check-In' : '🧑‍⚕️ Staff Registration')}
+          {role === 'guest' ? '🛌 Patient/Visitor Entry' : '🧑‍⚕️ Staff Registration'}
         </h2>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -199,7 +197,7 @@ export default function Onboarding() {
               <div>
                 <label className="block text-sm text-text-secondary mb-1">Profession / Role</label>
                 <select required value={profession} onChange={e => setProfession(e.target.value)} className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-info">
-                  {(facilityType === 'Hotel' ? HOTEL_PROFESSIONS : HOSPITAL_PROFESSIONS).map(prof => (
+                  {HOSPITAL_PROFESSIONS.map(prof => (
                     <option key={prof} value={prof}>{prof}</option>
                   ))}
                 </select>

@@ -25,7 +25,7 @@ export default function LandingPage() {
             Crisis Happens in <span className="text-alert-red">Seconds</span>.<br/>So Does CrisisSync.
           </h1>
           <p className="text-xl md:text-2xl text-text-secondary mb-10 max-w-3xl mx-auto">
-            A QR-based emergency coordination system that instantly bridges Hotel Guests, Staff, and First Responders.
+            A QR-based emergency coordination system that instantly bridges Patients, Medical Staff, and First Responders.
           </p>
           <div className="flex gap-6 justify-center">
             <button 
@@ -49,11 +49,11 @@ export default function LandingPage() {
 
       {/* Problem Section */}
       <section className="py-24 px-4 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl font-bold mb-12">The Hospitality Emergency Gap</h2>
+        <h2 className="text-3xl font-bold mb-12">The Healthcare Emergency Gap</h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-card-bg p-8 rounded-xl border border-card-border">
             <h3 className="text-xl font-bold text-alert-red mb-4">Guests are Stranded</h3>
-            <p className="text-text-secondary">During a fire or threat, a guest has no direct line to the exact security guard on their floor.</p>
+            <p className="text-text-secondary">During a critical event, a patient or visitor has no direct line to the exact medical staff on their floor.</p>
           </div>
           <div className="bg-card-bg p-8 rounded-xl border border-card-border">
             <h3 className="text-xl font-bold text-warning mb-4">Staff Gets Info Late</h3>
@@ -74,7 +74,7 @@ export default function LandingPage() {
             <div className="flex-1 text-center relative z-10">
               <div className="w-20 h-20 bg-dark-bg border-2 border-primary-red rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">1</div>
               <h3 className="text-xl font-bold mb-2">Scan QR</h3>
-              <p className="text-text-secondary">Guests and Staff scan a building-specific QR code upon entry. No app download needed.</p>
+              <p className="text-text-secondary">Patients, Visitors, and Medical Staff scan a building-specific QR code upon entry. No app download needed.</p>
             </div>
             <div className="flex-1 text-center relative z-10">
               <div className="w-20 h-20 bg-dark-bg border-2 border-warning rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">2</div>

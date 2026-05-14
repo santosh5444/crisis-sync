@@ -106,23 +106,13 @@ export default function AdminLogin() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative z-10">
           {!isLogin && (
             <>
+
               <div>
-                <label className="block text-sm text-text-secondary mb-1">Facility Type</label>
-                <select 
-                  value={facilityType} 
-                  onChange={e => setFacilityType(e.target.value)} 
-                  className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red mb-2"
-                >
-                  <option value="Hospital">Hospital / Medical Center</option>
-                  <option value="Hotel">Hotel / Resort</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">Building/Facility Name</label>
+                <label className="block text-sm text-text-secondary mb-1">Hospital Name</label>
                 <input 
                   required={!isLogin} type="text" value={buildingName} onChange={e => setBuildingName(e.target.value)} 
                   className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-primary-red" 
-                  placeholder="e.g. Apollo Hospital / Hyatt Hotel" 
+                  placeholder="e.g. Apollo Hospital" 
                 />
               </div>
             </>

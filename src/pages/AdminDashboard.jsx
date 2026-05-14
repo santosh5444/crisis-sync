@@ -26,8 +26,8 @@ export default function AdminDashboard() {
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const buildingId = localStorage.getItem('adminBuildingId') || DEFAULT_BUILDING_ID;
   const adminProfile = {
-    buildingName: localStorage.getItem('adminBuildingName') || 'Crisis Facility',
-    facilityType: localStorage.getItem('adminFacilityType') || 'Hospital'
+    buildingName: localStorage.getItem('adminBuildingName') || 'Hospital Authority',
+    facilityType: 'Hospital'
   };
 
   // Logout
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
           </div>
           {adminProfile && (
             <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              {adminProfile.buildingName} • {adminProfile.facilityType}
+              {adminProfile.buildingName}
             </div>
           )}
         </div>
@@ -517,13 +517,13 @@ export default function AdminDashboard() {
               {/* Guest QR */}
               <div className="bg-card-bg p-6 rounded-xl border border-card-border flex flex-col items-center">
                 <h3 className="font-bold mb-4 text-white">
-                  {adminProfile?.facilityType === 'Hotel' ? 'Guest Fast-Track' : 'Patient Fast-Track'}
+                  Patient Fast-Track
                 </h3>
                 <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
                   <QRCodeSVG value={`${window.location.origin}/onboarding/${buildingId}?role=guest`} size={150} level={"H"} fgColor={"#0D0D0D"} bgColor={"#FFFFFF"} />
                 </div>
                 <p className="text-xs text-text-secondary">
-                  Goes straight to {adminProfile?.facilityType === 'Hotel' ? 'Guest' : 'Patient'} form
+                  Goes straight to Patient form
                 </p>
               </div>
 

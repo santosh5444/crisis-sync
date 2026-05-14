@@ -6,7 +6,7 @@ import { ShieldCheck, AlertCircle, Search, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
 import ReportItemModal from '../components/ReportItemModal';
-import { HOSPITAL_SERVICES, HOTEL_SERVICES } from '../utils/constants';
+import { HOSPITAL_SERVICES } from '../utils/constants';
 
 export default function GuestDashboard() {
   const { user, setUser } = useAppContext();
@@ -214,10 +214,10 @@ export default function GuestDashboard() {
         {/* General Services Section */}
         <section>
           <h3 className="font-bold mb-4 flex items-center gap-2">
-            {user?.facilityType === 'Hotel' ? 'Guest Services' : 'Room & Medical Services'}
+            Room & Medical Services
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            {(user?.facilityType === 'Hotel' ? HOTEL_SERVICES : HOSPITAL_SERVICES).map(service => (
+            {HOSPITAL_SERVICES.map(service => (
               <button 
                 key={service.id}
                 onClick={() => handleServiceRequest(service.label)}
