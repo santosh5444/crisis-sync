@@ -136,11 +136,9 @@ export default function Onboarding() {
             className="bg-card-bg border border-card-border p-10 rounded-xl cursor-pointer hover:border-primary-red transition flex flex-col items-center text-center shadow-lg hover:shadow-primary-red/20"
           >
             <div className="text-6xl mb-4 drop-shadow-md">🛌</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              {facilityType === 'Hotel' ? 'Hotel Guest' : 'Patient / Visitor'}
-            </h3>
-            <p className="text-text-secondary">
-              {facilityType === 'Hotel' ? 'I am staying at this hotel.' : 'I am receiving care or visiting this facility.'}
+            <h3 className="text-2xl font-bold text-white mb-2">Patient / Visitor</h3>
+            <p className="text-text-secondary text-sm">
+              I am a visitor or resident at this facility.
             </p>
           </motion.div>
           <motion.div 
@@ -149,12 +147,10 @@ export default function Onboarding() {
             onClick={() => setRole('staff')}
             className="bg-card-bg border border-card-border p-10 rounded-xl cursor-pointer hover:border-info transition flex flex-col items-center text-center shadow-lg hover:shadow-info/20"
           >
-            <div className="text-6xl mb-4 drop-shadow-md">{facilityType === 'Hotel' ? '🛎️' : '🧑‍⚕️'}</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              {facilityType === 'Hotel' ? 'Hotel Staff' : 'Medical Staff'}
-            </h3>
-            <p className="text-text-secondary">
-              {facilityType === 'Hotel' ? 'I work here and assist guests.' : 'I work here and respond to medical requests & emergencies.'}
+            <div className="text-6xl mb-4 drop-shadow-md">🧑‍⚕️</div>
+            <h3 className="text-2xl font-bold text-white mb-2">Medical Staff</h3>
+            <p className="text-text-secondary text-sm">
+              I work here and respond to facility emergencies.
             </p>
           </motion.div>
         </div>

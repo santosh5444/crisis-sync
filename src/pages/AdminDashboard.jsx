@@ -175,7 +175,7 @@ export default function AdminDashboard() {
   const TABS = [
     { id: 'LIVE_SOS', label: 'Live SOS', icon: ShieldAlert },
     { id: 'SERVICES', label: 'Services', icon: Clock },
-    { id: 'GUESTS', label: 'Guests', icon: Users },
+    { id: 'PATIENTS', label: 'Patients', icon: Users },
     { id: 'STAFF', label: 'Staff', icon: HardHat },
     { id: 'ANALYTICS', label: 'Analytics', icon: BarChart3 },
     { id: 'EMERGENCY', label: 'Dispatch', icon: PhoneCall },
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
       <aside className="w-64 bg-card-bg border-r border-card-border flex flex-col hidden md:flex">
         <div className="p-6 border-b border-card-border flex flex-col gap-1">
           <div className="flex items-center gap-2 text-primary-red font-bold text-xl">
-            <ShieldAlert /> SENTINEL
+            <ShieldAlert /> CrisisSync
           </div>
           {adminProfile && (
             <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
