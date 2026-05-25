@@ -474,12 +474,12 @@ export default function GuestDashboard() {
               <button 
                 key={service.id}
                 onClick={() => handleServiceRequest(service.label)}
-                className="group relative bg-dark-bg/60 border border-card-border hover:border-primary-red p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all duration-300 gap-2 hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-primary-red/10"
+                className="bg-dark-bg/60 border border-card-border hover:border-primary-red p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all duration-200 gap-2 hover:brightness-110 active:brightness-90 shadow-md"
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110 ${service.color.split(' ').slice(0, 2).join(' ')}`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${service.color.split(' ').slice(0, 2).join(' ')}`}>
                   {service.icon}
                 </div>
-                <span className="text-xs font-bold text-text-secondary group-hover:text-white transition-colors">{service.label}</span>
+                <span className="text-xs font-bold text-text-secondary transition-colors">{service.label}</span>
               </button>
             ))}
           </div>
@@ -503,7 +503,7 @@ export default function GuestDashboard() {
                 className={`w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md ${
                   aiLoading 
                     ? 'bg-info/20 text-info cursor-not-allowed'
-                    : 'bg-info hover:bg-blue-600 text-white shadow-info/20 hover:scale-[1.01] active:scale-[0.99]'
+                    : 'bg-info hover:bg-blue-600 text-white shadow-info/20 active:brightness-90'
                 }`}
               >
                 {aiLoading ? (

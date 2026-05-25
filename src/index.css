@@ -49,7 +49,8 @@
   background: rgba(255,82,82,0.6); 
 }
 
-/* Global button hover pulse */
-button:active {
-  transform: scale(0.95);
+/* Global button active press - skips buttons with their own scale classes */
+button:active:not([class*="scale"]) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
 }
