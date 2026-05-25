@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { ref, onValue, set, push, serverTimestamp, runTransaction, get, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, onValue, set, push, serverTimestamp, runTransaction } from 'firebase/database';
 import { DEFAULT_BUILDING_ID } from '../utils/constants';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { 
   ShieldAlert, Users, HardHat, BarChart3, PhoneCall, 
-  LogOut, AlertTriangle, CheckCircle, Clock, MapPin, Phone, Bell, QrCode, Search 
+  LogOut, AlertTriangle, CheckCircle, Clock, MapPin, Phone, QrCode, Search 
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { QRCodeSVG } from 'qrcode.react';
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
         return current;
       });
       toast.success("Crisis marked as resolved.");
-    } catch(e) { toast.error("Error resolving crisis."); }
+    } catch { toast.error("Error resolving crisis."); }
   };
 
   const handleFalseAlarm = async (crisisId) => {
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
         return current;
       });
       toast.success("SOS marked as Fake/False Alarm.");
-    } catch(e) { toast.error("Error updating crisis."); }
+    } catch { toast.error("Error updating crisis."); }
   };
 
   const handleBroadcast = async (e) => {
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
       });
       toast.success("HIGH LEVEL ALERT pushed to all Guests & Staff!");
       setBroadcastMsg('');
-    } catch(e) { toast.error("Broadcast failed."); }
+    } catch { toast.error("Broadcast failed."); }
   };
 
   const handleStopAlert = async () => {
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
         type: 'CLEAR'
       });
       toast.success("Alert manually stopped across all devices.");
-    } catch(e) { toast.error("Failed to stop alert."); }
+    } catch { toast.error("Failed to stop alert."); }
   };
 
   // UI Helpers
@@ -242,7 +242,7 @@ export default function AdminDashboard() {
             { label: "Active Crisis", val: activeCrises.length, color: "text-alert-red" },
             { label: "Resolved Today", val: resolvedToday.length, color: "text-success" },
             { label: "Staff Online", val: staffOnline.length, color: "text-info" },
-            { label: "Total Guests", val: guests.length, color: "text-white" },
+            { label: "Total Patients", val: guests.length, color: "text-white" },
             { label: "Total Scans", val: guests.length + staff.length, color: "text-text-secondary" },
           ].map((stat, i) => (
             <div key={i} className="bg-card-bg p-4 rounded-xl border border-card-border">
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="col-span-2">
                         <p className="text-xs text-text-secondary uppercase mb-1">Description</p>
-                        <p className="bg-dark-bg p-3 rounded text-sm">"{crisis.description || 'No description provided.'}"</p>
+                        <p className="bg-dark-bg p-3 rounded text-sm">&quot;{crisis.description || 'No description provided.'}&quot;</p>
                       </div>
                     </div>
 
@@ -357,10 +357,10 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 2: GUESTS */}
-        {activeTab === 'GUESTS' && (
+        {/* TAB 2: PATIENTS */}
+        {activeTab === 'PATIENTS' && (
           <div>
-            <h2 className="text-2xl font-bold mb-4">Active Guests Directory</h2>
+            <h2 className="text-2xl font-bold mb-4">Active Patients Directory</h2>
             <div className="bg-card-bg border border-card-border rounded-xl overflow-hidden">
               <table className="w-full text-left text-sm">
                 <thead className="bg-dark-bg text-text-secondary">
@@ -375,7 +375,7 @@ export default function AdminDashboard() {
                       <td className="p-4 text-text-secondary">{new Date(g.joinedAt).toLocaleString()}</td>
                     </tr>
                   ))}
-                  {guests.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-text-secondary">No guests currently checked into network.</td></tr>}
+                  {guests.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-text-secondary">No patients currently checked into network.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -419,7 +419,7 @@ export default function AdminDashboard() {
               <div className="bg-card-bg p-6 rounded-xl border border-card-border h-80">
                 <h3 className="font-bold mb-4 text-text-secondary">Network Registrations (Mock)</h3>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[{name: 'Guests', count: guests.length}, {name: 'Staff', count: staff.length}]}>
+                  <BarChart data={[{name: 'Patients', count: guests.length}, {name: 'Staff', count: staff.length}]}>
                     <XAxis dataKey="name" stroke="#9E9E9E"/>
                     <YAxis stroke="#9E9E9E"/>
                     <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor: '#1A1A1A', borderColor: '#2D2D2D'}}/>
@@ -511,7 +511,7 @@ export default function AdminDashboard() {
                 <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
                   <QRCodeSVG value={`${window.location.origin}/onboarding/${buildingId}`} size={150} level={"H"} fgColor={"#0D0D0D"} bgColor={"#FFFFFF"} />
                 </div>
-                <p className="text-xs text-text-secondary">Asks "Who are you?" on scan</p>
+                <p className="text-xs text-text-secondary">Asks &quot;Who are you?&quot; on scan</p>
               </div>
 
               {/* Guest QR */}

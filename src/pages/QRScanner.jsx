@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
-import { DEFAULT_BUILDING_ID } from '../utils/constants';
 import { ArrowLeft } from 'lucide-react';
 
 export default function QRScanner() {
@@ -80,16 +79,31 @@ export default function QRScanner() {
         started = false; // Prevents unmount stop if we stop here
         html5QrCodeRef.current.stop().then(() => {
           setScanResult(decodedText);
-          // Check if decodedText is a URL and extract path or just use it
+          
           let target = decodedText;
+          let search = "";
           if (decodedText.includes('/onboarding/')) {
-            const parts = decodedText.split('/onboarding/');
-            target = parts[parts.length - 1];
+            const urlObj = new URL(decodedText.startsWith('http') ? decodedText : `${window.location.origin}${decodedText}`);
+            const pathParts = urlObj.pathname.split('/');
+            target = pathParts[pathParts.indexOf('onboarding') + 1];
+            search = urlObj.search;
           }
-          setTimeout(() => navigate(`/onboarding/${target}`), 1000);
-        }).catch(err => console.error("Error stopping scanner", err));
+          setTimeout(() => navigate(`/onboarding/${target}${search}`), 1000);
+        }).catch(err => {
+          console.error("Error stopping scanner", err);
+          setScanResult(decodedText);
+          let target = decodedText;
+          let search = "";
+          if (decodedText.includes('/onboarding/')) {
+            const urlObj = new URL(decodedText.startsWith('http') ? decodedText : `${window.location.origin}${decodedText}`);
+            const pathParts = urlObj.pathname.split('/');
+            target = pathParts[pathParts.indexOf('onboarding') + 1];
+            search = urlObj.search;
+          }
+          navigate(`/onboarding/${target}${search}`);
+        });
       },
-      (errorMessage) => {
+      () => {
         // Ignore background scan errors
       }
     ).then(() => {
@@ -123,7 +137,7 @@ export default function QRScanner() {
           }
         `}</style>
         <h2 className="text-3xl font-bold mb-2 text-white">Enter Building</h2>
-        <p className="text-text-secondary mb-8">Scan the building's QR code to connect to the emergency network.</p>
+        <p className="text-text-secondary mb-8">Scan the building&apos;s QR code to connect to the emergency network.</p>
         
         {cameras.length > 1 && (
           <div className="mb-4 text-left">

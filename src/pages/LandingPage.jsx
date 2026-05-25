@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldAlert, Zap, Clock, Users, Brain, Bell } from 'lucide-react';
@@ -53,7 +53,7 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-card-bg p-8 rounded-xl border border-card-border">
             <h3 className="text-xl font-bold text-alert-red mb-4">Patients are Stranded</h3>
-            <p className="text-text-secondary">During a sudden event or fall, a patient often can't reach the call bell or exact security post.</p>
+            <p className="text-text-secondary">During a sudden event or fall, a patient often can&apos;t reach the call bell or exact security post.</p>
           </div>
           <div className="bg-card-bg p-8 rounded-xl border border-card-border">
             <h3 className="text-xl font-bold text-warning mb-4">Code Blue Latency</h3>

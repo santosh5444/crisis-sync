@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EMERGENCY_TYPES } from '../utils/constants';
 import { analyzeCrisis } from '../services/geminiService';
@@ -36,7 +36,7 @@ export default function SOSModal({ isOpen, onClose }) {
       }
 
       // 1. Analyze with AI
-      const aiAnalysis = await analyzeCrisis(selectedType, description, location);
+      const aiAnalysis = await analyzeCrisis(selectedType, description, location, user.facilityType || 'Hospital');
       
       // 2. Save to Firebase
       const crisisData = {

@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { HOSPITAL_PROFESSIONS } from '../utils/constants';
 import { useAppContext } from '../context/AppContext';
-import { ref, set, get, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
 import { db } from '../firebase/config';
 
 export default function Onboarding() {
   const { buildingId } = useParams();
   const navigate = useNavigate();
-  const { setUser } = useAppContext();
+  const location = useLocation();
+  const { user, setUser } = useAppContext();
   
   // Check if role is pre-selected via QR code query param
-  const roleParam = new URLSearchParams(window.location.search).get('role');
+  const roleParam = new URLSearchParams(location.search).get('role');
   const [role, setRole] = useState(roleParam || null); // 'guest' | 'staff'
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,18 @@ export default function Onboarding() {
   const [profession, setProfession] = useState('');
   const [staffId, setStaffId] = useState('');
 
-  React.useEffect(() => {
+  // Auto-redirect if already checked into this building
+  useEffect(() => {
+    if (user && user.buildingId === buildingId) {
+      if (user.role === 'guest') {
+        navigate('/guest');
+      } else if (user.role === 'staff') {
+        navigate('/staff');
+      }
+    }
+  }, [user, buildingId, navigate]);
+
+  useEffect(() => {
     const fetchBuilding = async () => {
       try {
         const metadataRef = ref(db, `buildingMetadata/${buildingId}`);
@@ -41,17 +53,19 @@ export default function Onboarding() {
           setProfession(HOSPITAL_PROFESSIONS[0]);
         } else {
           // Fallback if not found
+          setFacilityType('Hospital');
+          setBuildingName('Crisis Facility');
           setProfession(HOSPITAL_PROFESSIONS[0]);
         }
       } catch (e) {
         console.error("Error fetching facility details", e);
+        setFacilityType('Hospital');
+        setBuildingName('Crisis Facility');
         setProfession(HOSPITAL_PROFESSIONS[0]);
       }
     };
     fetchBuilding().finally(() => setLoadingMetadata(false));
   }, [buildingId]);
-
-  const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

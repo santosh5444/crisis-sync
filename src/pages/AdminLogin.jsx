@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginAdmin, registerAdmin } from '../firebase/auth';
 import toast from 'react-hot-toast';
@@ -14,7 +14,7 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const [buildingName, setBuildingName] = useState('');
-  const [facilityType, setFacilityType] = useState('Hospital');
+  const facilityType = 'Hospital';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

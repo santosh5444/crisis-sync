@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase/config';
 import { ref, onValue, query, limitToLast } from 'firebase/database';
@@ -47,7 +47,7 @@ export default function AlertBanner() {
       
       osc.start(now);
       osc.stop(now + 30.0);
-    } catch(e) {
+    } catch {
       console.log("Audio play blocked by browser policy.");
     }
   };

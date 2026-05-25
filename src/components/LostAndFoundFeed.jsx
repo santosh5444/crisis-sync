@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../firebase/config';
 import { ref, onValue } from 'firebase/database';
 import { useAppContext } from '../context/AppContext';
@@ -34,7 +34,7 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, isAdmin]);
 
   const detectMatches = async (openItems) => {
     // A simplified client-side match check for newly added items
@@ -147,7 +147,7 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
                   {item.resolutionNote && (
                     <div className="mt-2 text-xs bg-dark-bg/50 p-2 rounded border border-card-border mb-3">
                       <span className="text-text-secondary uppercase text-[10px] font-bold block">Resolution Note:</span>
-                      <span className="text-white italic">"{item.resolutionNote}"</span>
+                      <span className="text-white italic">&quot;{item.resolutionNote}&quot;</span>
                     </div>
                   )}
                   

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SOSModal from './SOSModal';
 import { useAppContext } from '../context/AppContext';
 

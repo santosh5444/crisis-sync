@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -12,6 +11,7 @@ import AdminLogin from './pages/AdminLogin';
 
 import SOSButton from './components/SOSButton';
 import AlertBanner from './components/AlertBanner';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import { AppProvider } from './context/AppContext';
 
@@ -39,7 +39,7 @@ function App() {
           <Route path="/staff" element={<StaffDashboard />} />
           
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         </Routes>
 
         {/* Global SOS Button */}

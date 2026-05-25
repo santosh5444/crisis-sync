@@ -1,18 +1,18 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
 
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = sessionStorage.getItem('crisisSyncUser');
+    const saved = localStorage.getItem('crisisSyncUser');
     return saved ? JSON.parse(saved) : null;
   });
 
   useEffect(() => {
     if (user) {
-      sessionStorage.setItem('crisisSyncUser', JSON.stringify(user));
+      localStorage.setItem('crisisSyncUser', JSON.stringify(user));
     } else {
-      sessionStorage.removeItem('crisisSyncUser');
+      localStorage.removeItem('crisisSyncUser');
     }
   }, [user]);
 

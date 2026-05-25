@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from "../utils/constants";
 
-export async function analyzeCrisis(type, description, location) {
+export async function analyzeCrisis(type, description, location, facilityType = 'Hospital') {
   try {
     if (GEMINI_API_KEY === "MOCK_GEMINI_KEY") {
       throw new Error("Using mock key");
@@ -12,7 +12,7 @@ export async function analyzeCrisis(type, description, location) {
     const prompt = `Emergency type: ${type}
 Description: ${description || 'None provided'}
 Location: ${location}
-Building: Hotel/Hospitality venue
+Building: ${facilityType}
 
 Analyze and return JSON exactly matching this format:
 {

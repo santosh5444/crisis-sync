@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { db } from '../firebase/config';
 import { ref, onValue, runTransaction, serverTimestamp } from 'firebase/database';
 import { useAppContext } from '../context/AppContext';
@@ -206,7 +206,7 @@ export default function StaffDashboard() {
                     <p className="text-sm text-text-secondary">Reported by: {crisis.raisedBy.name} ({crisis.raisedBy.role})</p>
                   </div>
                   
-                  {crisis.description && <p className="text-sm bg-dark-bg p-3 rounded border border-card-border mb-4">"{crisis.description}"</p>}
+                  {crisis.description && <p className="text-sm bg-dark-bg p-3 rounded border border-card-border mb-4">&quot;{crisis.description}&quot;</p>}
 
                   <div className="flex gap-3 mt-4">
                     <button 
@@ -214,7 +214,7 @@ export default function StaffDashboard() {
                       disabled={!onlineStatus}
                       className={`flex-1 py-4 rounded-xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-2 ${onlineStatus ? 'bg-primary-red hover:bg-alert-red text-white shadow-primary-red/20' : 'bg-card-border text-text-secondary cursor-not-allowed'}`}
                     >
-                      <AlertTriangle size={20}/> It's REAL
+                      <AlertTriangle size={20}/> It&apos;s REAL
                     </button>
                     <button 
                       onClick={() => handleFalseAlarm(crisis.sosId)}

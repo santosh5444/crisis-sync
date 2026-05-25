@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, storage } from '../firebase/config';
 import { ref as dbRef, set, push, serverTimestamp } from 'firebase/database';
