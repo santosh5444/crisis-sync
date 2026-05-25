@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { db } from '../firebase/config';
 import { ref, onValue, runTransaction, serverTimestamp } from 'firebase/database';
 import { useAppContext } from '../context/AppContext';
-import { Phone, Clock, AlertTriangle, CheckCircle, MapPin, Search, ArrowLeft } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, CheckCircle, MapPin, Search, ArrowLeft, X, FileText, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,29 @@ export default function StaffDashboard() {
   const [services, setServices] = useState([]);
   const [onlineStatus, setOnlineStatus] = useState(user?.status === 'available' || true);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // Patient Medical Profile Viewer States
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [selectedPatientName, setSelectedPatientName] = useState('');
+  const [patientMedicalProfile, setPatientMedicalProfile] = useState(null);
+  const [loadingMedicalProfile, setLoadingMedicalProfile] = useState(false);
+
+  // Load patient medical profile on demand
+  useEffect(() => {
+    if (!selectedPatientId || !user?.buildingId) {
+      setPatientMedicalProfile(null);
+      return;
+    }
+    setLoadingMedicalProfile(true);
+    const patientRef = ref(db, `guests/${user.buildingId}/${selectedPatientId}`);
+    const unsubscribe = onValue(patientRef, (snapshot) => {
+      setPatientMedicalProfile(snapshot.val());
+      setLoadingMedicalProfile(false);
+    }, () => {
+      setLoadingMedicalProfile(false);
+    });
+    return () => unsubscribe();
+  }, [selectedPatientId, user]);
 
   const toggleStatus = async () => {
     const newStatus = !onlineStatus;
@@ -201,9 +224,22 @@ export default function StaffDashboard() {
                     <span className="text-xs text-text-secondary flex items-center gap-1"><Clock size={12}/> Just now</span>
                   </div>
                   
-                  <div className="mb-4">
-                    <p className="font-bold text-lg flex items-center gap-2"><MapPin size={18} className="text-primary-red"/> {crisis.raisedBy.roomNumber || crisis.raisedBy.floor}</p>
-                    <p className="text-sm text-text-secondary">Reported by: {crisis.raisedBy.name} ({crisis.raisedBy.role})</p>
+                  <div className="mb-4 flex justify-between items-end">
+                    <div>
+                      <p className="font-bold text-lg flex items-center gap-2"><MapPin size={18} className="text-primary-red"/> {crisis.raisedBy.roomNumber || crisis.raisedBy.floor}</p>
+                      <p className="text-sm text-text-secondary">Reported by: {crisis.raisedBy.name} ({crisis.raisedBy.role})</p>
+                    </div>
+                    {crisis.raisedBy.role === 'guest' && (
+                      <button 
+                        onClick={() => {
+                          setSelectedPatientId(crisis.raisedBy.userId);
+                          setSelectedPatientName(crisis.raisedBy.name);
+                        }}
+                        className="text-xs bg-info/20 hover:bg-info/30 text-info font-bold px-3 py-1.5 rounded-lg border border-info/30 transition flex items-center gap-1.5"
+                      >
+                        ⚕️ Medical Info
+                      </button>
+                    )}
                   </div>
                   
                   {crisis.description && <p className="text-sm bg-dark-bg p-3 rounded border border-card-border mb-4">&quot;{crisis.description}&quot;</p>}
@@ -260,11 +296,31 @@ export default function StaffDashboard() {
               <div key={req.requestId} className="bg-info/10 border border-info p-5 rounded-xl">
                 <div className="flex justify-between items-start mb-3">
                   <span className="px-2 py-1 text-xs font-bold rounded bg-info text-white">
-                    {req.type}
+                    {req.type.startsWith('Custom: ') ? 'Custom Request' : req.type}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-1">Loc: {req.raisedBy.roomNumber}</h3>
-                <p className="text-text-secondary mb-4">Requested by: {req.raisedBy.name}</p>
+                
+                {req.type.startsWith('Custom: ') && (
+                  <p className="text-sm bg-dark-bg/60 p-3 rounded border border-card-border mb-4 text-white italic">
+                    &quot;{req.type.replace('Custom: ', '')}&quot;
+                  </p>
+                )}
+
+                <div className="flex justify-between items-end mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-1">Loc: {req.raisedBy.roomNumber}</h3>
+                    <p className="text-sm text-text-secondary">Requested by: {req.raisedBy.name}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setSelectedPatientId(req.raisedBy.userId);
+                      setSelectedPatientName(req.raisedBy.name);
+                    }}
+                    className="text-xs bg-info/20 hover:bg-info/30 text-info font-bold px-3 py-1.5 rounded-lg border border-info/30 transition flex items-center gap-1.5"
+                  >
+                    ⚕️ Medical Info
+                  </button>
+                </div>
                 
                 <div className="flex gap-3">
                   <a href={`tel:${req.raisedBy.mobile}`} className="flex-1 bg-card-bg border border-card-border py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-card-border transition font-semibold">
@@ -308,13 +364,50 @@ export default function StaffDashboard() {
                   className="bg-card-bg border border-warning/50 p-5 rounded-xl flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-warning font-bold text-lg">{req.type}</span>
+                    <div className="flex justify-between items-start mb-2 flex-wrap gap-1">
+                      <span className="text-warning font-bold text-lg">
+                        {req.type.startsWith('Custom: ') ? 'Custom Request' : req.type}
+                      </span>
                       <span className="text-xs text-text-secondary">{Math.floor((Date.now() - req.timestamp) / 60000)}m ago</span>
                     </div>
-                    <div className="mb-4">
-                      <p className="font-bold flex items-center gap-2"><MapPin size={16} className="text-primary-red"/> {req.raisedBy.roomNumber}</p>
-                      <p className="text-sm text-text-secondary">Guest: {req.raisedBy.name}</p>
+
+                    {req.type.startsWith('Custom: ') && (
+                      <p className="text-sm bg-dark-bg/60 p-3 rounded border border-card-border mb-3 text-white italic">
+                        &quot;{req.type.replace('Custom: ', '')}&quot;
+                      </p>
+                    )}
+
+                    {req.aiAnalysis && (
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-info/20 text-info border border-info/30">
+                          Category: {req.aiAnalysis.suggestedCategory}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border ${
+                          req.aiAnalysis.urgency === 'HIGH' || req.aiAnalysis.urgency === 'CRITICAL'
+                            ? 'bg-alert-red/20 text-alert-red border-alert-red/30'
+                            : req.aiAnalysis.urgency === 'MEDIUM'
+                            ? 'bg-warning/20 text-warning border-warning/30'
+                            : 'bg-text-secondary/20 text-text-secondary border-card-border'
+                        }`}>
+                          Urgency: {req.aiAnalysis.urgency}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="mb-4 flex justify-between items-end">
+                      <div>
+                        <p className="font-bold flex items-center gap-2"><MapPin size={16} className="text-primary-red"/> {req.raisedBy.roomNumber}</p>
+                        <p className="text-sm text-text-secondary">Patient: {req.raisedBy.name}</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setSelectedPatientId(req.raisedBy.userId);
+                          setSelectedPatientName(req.raisedBy.name);
+                        }}
+                        className="text-xs bg-info/20 hover:bg-info/30 text-info font-bold px-2 py-1 rounded border border-info/30 transition flex items-center gap-1"
+                      >
+                        ⚕️ Info
+                      </button>
                     </div>
                   </div>
                   
@@ -350,6 +443,88 @@ export default function StaffDashboard() {
       </section>
 
       <ReportItemModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
+
+      {/* Patient Medical Profile Modal */}
+      {selectedPatientId && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-card-bg border border-card-border w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
+            <button 
+              onClick={() => setSelectedPatientId(null)} 
+              className="absolute top-4 right-4 text-text-secondary hover:text-white"
+            >
+              <X size={24} />
+            </button>
+            
+            <div className="bg-info/20 p-6 border-b border-info/30">
+              <h2 className="text-xl font-bold text-info flex items-center gap-2">
+                ⚕️ Medical Profile: {selectedPatientName}
+              </h2>
+              <p className="text-xs text-text-secondary mt-1">Accessing hospital file vault...</p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {loadingMedicalProfile ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 size={32} className="animate-spin text-info mb-2" />
+                  <p className="text-text-secondary text-sm">Retrieving medical files...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Medications & Conditions */}
+                  <div>
+                    <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Active Medications & Conditions</h3>
+                    <div className="bg-dark-bg border border-card-border p-4 rounded-xl text-sm">
+                      {patientMedicalProfile?.medicationList ? (
+                        <p className="text-white whitespace-pre-wrap font-medium">{patientMedicalProfile.medicationList}</p>
+                      ) : (
+                        <p className="text-text-secondary italic">No medications or conditions reported by patient.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Uploaded Files */}
+                  <div>
+                    <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Patient Uploaded Reports</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {!patientMedicalProfile?.reports || Object.keys(patientMedicalProfile.reports).length === 0 ? (
+                        <p className="text-xs text-text-secondary italic text-center py-4">No reports uploaded to vault.</p>
+                      ) : (
+                        Object.values(patientMedicalProfile.reports).map(report => (
+                          <div key={report.reportId} className="bg-dark-bg border border-card-border p-3 rounded-lg flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <FileText size={18} className="text-info flex-shrink-0" />
+                              <a 
+                                href={report.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="font-semibold truncate hover:text-info hover:underline text-white"
+                              >
+                                {report.name}
+                              </a>
+                            </div>
+                            <span className="text-[10px] text-text-secondary">
+                              {new Date(report.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="p-4 bg-black/20 border-t border-card-border flex justify-end">
+              <button 
+                onClick={() => setSelectedPatientId(null)} 
+                className="px-4 py-2 bg-dark-bg border border-card-border hover:bg-card-border rounded font-bold text-sm text-white transition"
+              >
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

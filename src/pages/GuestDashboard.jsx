@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { db } from '../firebase/config';
-import { ref, onValue, query, limitToLast } from 'firebase/database';
+import { db, storage } from '../firebase/config';
+import { ref, onValue, query, limitToLast, set, push, serverTimestamp, update, remove } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useAppContext } from '../context/AppContext';
-import { ShieldCheck, AlertCircle, Search, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Search, ArrowLeft, FileText, Upload, Trash2, Loader2, Sparkles, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
 import ReportItemModal from '../components/ReportItemModal';
 import { HOSPITAL_SERVICES } from '../utils/constants';
+import { analyzeServiceRequest, analyzeCrisis } from '../services/geminiService';
 
 export default function GuestDashboard() {
   const { user, setUser } = useAppContext();
@@ -16,6 +18,14 @@ export default function GuestDashboard() {
   const [myLostAndFound, setMyLostAndFound] = useState([]);
   const [buildingHasActiveCrisis, setBuildingHasActiveCrisis] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // New States
+  const [customText, setCustomText] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [medsText, setMedsText] = useState('');
+  const [isSavingMeds, setIsSavingMeds] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   useEffect(() => {
     if (!user?.buildingId) return;
@@ -72,12 +82,31 @@ export default function GuestDashboard() {
       }
     });
 
+    const patientProfileRef = ref(db, `guests/${user.buildingId}/${user.userId}`);
+    const unProfile = onValue(patientProfileRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setMedsText(data.medicationList || '');
+        setReports(data.reports ? Object.values(data.reports).sort((a,b) => b.timestamp - a.timestamp) : []);
+      } else {
+        setMedsText('');
+        setReports([]);
+      }
+    });
+
     // Setup interval to clear badge when 30 seconds pass
     const timer = setInterval(() => {
       setBuildingHasActiveCrisis(prev => prev); // force re-eval if we had the actual timestamp, but simpler to just let it be. Let's just do a manual check.
     }, 1000);
 
-    return () => { unsubscribe(); unServices(); unLnf(); unBroadcasts(); clearInterval(timer); };
+    return () => { 
+      unsubscribe(); 
+      unServices(); 
+      unLnf(); 
+      unBroadcasts(); 
+      unProfile();
+      clearInterval(timer); 
+    };
   }, [user]);
 
   if (!user || user.role !== 'guest') {
@@ -86,7 +115,6 @@ export default function GuestDashboard() {
 
   const handleServiceRequest = async (type) => {
     try {
-      const { push, serverTimestamp, set } = await import('firebase/database');
       const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
       await set(newRef, {
         requestId: newRef.key,
@@ -104,6 +132,135 @@ export default function GuestDashboard() {
     } catch (error) {
       console.error(error);
       import('react-hot-toast').then(m => m.default.error("Failed to request service"));
+    }
+  };
+
+  const handleCustomRequestSubmit = async (e) => {
+    e.preventDefault();
+    if (!customText.trim()) return;
+    setAiLoading(true);
+    try {
+      import('react-hot-toast').then(m => m.default("AI triaging request...", { icon: '🤖' }));
+      const aiTriage = await analyzeServiceRequest(customText);
+
+      if (aiTriage.isEmergency) {
+        if (window.confirm(`⚠️ AI Warning: Your request was triaged as a CRITICAL EMERGENCY. Direct message: "${aiTriage.flagReason}".\n\nWould you like to trigger an SOS alarm immediately?`)) {
+          const crisisId = `sos_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          const location = user.roomNumber || 'Unknown Location';
+          
+          const aiAnalysis = await analyzeCrisis(aiTriage.suggestedCategory, customText, location);
+          
+          const crisisData = {
+            sosId: crisisId,
+            raisedBy: user,
+            type: aiTriage.suggestedCategory,
+            description: customText,
+            severity: aiAnalysis.severity,
+            status: 'PENDING',
+            buildingId: user.buildingId,
+            timestamp: serverTimestamp(),
+            geminiAnalysis: aiAnalysis,
+            autoEscalated: false
+          };
+
+          await set(ref(db, `crises/${user.buildingId}/${crisisId}`), crisisData);
+          import('react-hot-toast').then(m => m.default.success("SOS Alert triggered automatically! Help is on the way."));
+        } else {
+          import('react-hot-toast').then(m => m.default.error("SOS canceled. Regular request filed instead."));
+          const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
+          await set(newRef, {
+            requestId: newRef.key,
+            type: `Custom: ${customText}`,
+            status: 'PENDING',
+            timestamp: serverTimestamp(),
+            raisedBy: {
+              userId: user.userId,
+              name: user.name,
+              roomNumber: user.roomNumber,
+              mobile: user.mobile
+            },
+            aiAnalysis: aiTriage
+          });
+          import('react-hot-toast').then(m => m.default.success("Request sent."));
+        }
+      } else {
+        const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
+        await set(newRef, {
+          requestId: newRef.key,
+          type: `Custom: ${customText}`,
+          status: 'PENDING',
+          timestamp: serverTimestamp(),
+          raisedBy: {
+            userId: user.userId,
+            name: user.name,
+            roomNumber: user.roomNumber,
+            mobile: user.mobile
+          },
+          aiAnalysis: aiTriage
+        });
+        import('react-hot-toast').then(m => m.default.success(`Request sent. Categorized as: ${aiTriage.suggestedCategory}`));
+      }
+      setCustomText('');
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to submit request."));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleSaveMeds = async () => {
+    setIsSavingMeds(true);
+    try {
+      await update(ref(db, `guests/${user.buildingId}/${user.userId}`), {
+        medicationList: medsText
+      });
+      import('react-hot-toast').then(m => m.default.success("Medical List Saved!"));
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to save meds list."));
+    } finally {
+      setIsSavingMeds(false);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      import('react-hot-toast').then(m => m.default("Uploading report...", { icon: '⏳' }));
+      const fileRef = storageRef(storage, `patientReports/${user.buildingId}/${user.userId}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+
+      const reportRef = push(ref(db, `guests/${user.buildingId}/${user.userId}/reports`));
+      await set(reportRef, {
+        reportId: reportRef.key,
+        name: file.name,
+        url,
+        path: fileRef.fullPath,
+        timestamp: Date.now()
+      });
+      import('react-hot-toast').then(m => m.default.success("Medical Report Uploaded!"));
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to upload report."));
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleDeleteReport = async (reportId, filePath) => {
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
+    try {
+      const fileRef = storageRef(storage, filePath);
+      await deleteObject(fileRef);
+      await remove(ref(db, `guests/${user.buildingId}/${user.userId}/reports/${reportId}`));
+      import('react-hot-toast').then(m => m.default.success("Report deleted successfully."));
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to delete report."));
     }
   };
 
@@ -206,27 +363,160 @@ export default function GuestDashboard() {
             </div>
           </section>
         )}
+
+        {/* Medical Vault Section */}
+        <section className="bg-card-bg border border-card-border p-6 rounded-2xl shadow-lg mt-8">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+            🔒 Patient Medical Vault
+          </h3>
+          <p className="text-xs text-text-secondary mb-4">
+            Save your medication lists and upload reports so doctors and staff can instantly access them in emergencies.
+          </p>
+
+          {/* Meds List Area */}
+          <div className="mb-6">
+            <label className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2 block">
+              Active Medications & Health Conditions
+            </label>
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={medsText}
+                onChange={e => setMedsText(e.target.value)}
+                placeholder="e.g. Taking Metformin 500mg, allergic to Penicillin, history of high blood pressure."
+                className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-info text-sm h-24 resize-none transition-colors"
+              />
+              <button
+                onClick={handleSaveMeds}
+                disabled={isSavingMeds}
+                className="self-end px-4 py-2 bg-dark-bg border border-card-border hover:border-success hover:text-success text-text-secondary rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+              >
+                {isSavingMeds ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={12} /> Save List
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* File Upload Area */}
+          <div className="border-t border-card-border pt-6">
+            <label className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2 block">
+              Uploaded Lab Reports & Receipts (PDF / Images)
+            </label>
+            
+            <div className="relative border border-dashed border-card-border rounded-lg p-4 text-center hover:border-info transition duration-300 bg-dark-bg/20 mb-4">
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={handleFileUpload}
+                disabled={uploadingFile}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              />
+              {uploadingFile ? (
+                <span className="text-info font-bold text-xs flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin" /> Uploading report...
+                </span>
+              ) : (
+                <span className="text-text-secondary text-xs flex items-center justify-center gap-2">
+                  <Upload size={16} className="text-info" /> Drag & drop or click to upload report
+                </span>
+              )}
+            </div>
+
+            {/* Uploaded Reports List */}
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {reports.length === 0 ? (
+                <p className="text-xs text-text-secondary italic text-center py-4">No reports uploaded yet.</p>
+              ) : (
+                reports.map(report => (
+                  <div key={report.reportId} className="bg-dark-bg border border-card-border p-3 rounded-lg flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText size={18} className="text-info flex-shrink-0" />
+                      <a 
+                        href={report.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="font-semibold truncate hover:text-info hover:underline text-white"
+                      >
+                        {report.name}
+                      </a>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteReport(report.reportId, report.path)}
+                      className="text-text-secondary hover:text-alert-red transition duration-200"
+                      title="Delete Report"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Right Column: Actions & History */}
       <div className="flex flex-col gap-6">
         
         {/* General Services Section */}
-        <section>
-          <h3 className="font-bold mb-4 flex items-center gap-2">
-            Room & Medical Services
+        <section className="bg-card-bg border border-card-border p-6 rounded-2xl shadow-lg">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+            🏥 Room & Medical Services
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-6">
             {HOSPITAL_SERVICES.map(service => (
               <button 
                 key={service.id}
                 onClick={() => handleServiceRequest(service.label)}
-                className="bg-card-bg border border-card-border hover:border-primary-red hover:bg-dark-bg p-4 rounded-xl flex flex-col items-center justify-center text-center transition gap-2"
+                className="group relative bg-dark-bg/60 border border-card-border hover:border-primary-red p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all duration-300 gap-2 hover:scale-[102] active:scale-[0.98] shadow-md hover:shadow-primary-red/10"
               >
-                <span className="text-2xl">{service.icon}</span>
-                <span className="text-sm font-semibold">{service.label}</span>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110 ${service.color.split(' ').slice(0, 2).join(' ')}`}>
+                  {service.icon}
+                </div>
+                <span className="text-xs font-bold text-text-secondary group-hover:text-white transition-colors">{service.label}</span>
               </button>
             ))}
+          </div>
+
+          {/* Custom Service Request with AI */}
+          <div className="border-t border-card-border pt-6">
+            <h4 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Sparkles size={16} className="text-info" /> Custom Request (AI-Triaged)
+            </h4>
+            <form onSubmit={handleCustomRequestSubmit} className="flex flex-col gap-3">
+              <textarea
+                value={customText}
+                onChange={e => setCustomText(e.target.value)}
+                placeholder="Type your custom request here... (e.g. 'Need a clean towel' or 'My head hurts')"
+                className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-info text-sm h-20 resize-none transition-colors"
+                required
+              />
+              <button
+                type="submit"
+                disabled={aiLoading || !customText.trim()}
+                className={`w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md ${
+                  aiLoading 
+                    ? 'bg-info/20 text-info cursor-not-allowed'
+                    : 'bg-info hover:bg-blue-600 text-white shadow-info/20 hover:scale-[101] active:scale-[99]'
+                }`}
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> AI Analyzing Request...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} /> Send Request
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         </section>
 

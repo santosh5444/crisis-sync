@@ -7,7 +7,8 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { 
   ShieldAlert, Users, HardHat, BarChart3, PhoneCall, 
-  LogOut, AlertTriangle, CheckCircle, Clock, MapPin, Phone, QrCode, Search 
+  LogOut, AlertTriangle, CheckCircle, Clock, MapPin, Phone, QrCode, Search,
+  X, FileText, Loader2
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { QRCodeSVG } from 'qrcode.react';
@@ -29,6 +30,29 @@ export default function AdminDashboard() {
     buildingName: localStorage.getItem('adminBuildingName') || 'Crisis Facility',
     facilityType: localStorage.getItem('adminFacilityType') || 'Hospital'
   };
+
+  // Patient Medical Profile Viewer States
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [selectedPatientName, setSelectedPatientName] = useState('');
+  const [patientMedicalProfile, setPatientMedicalProfile] = useState(null);
+  const [loadingMedicalProfile, setLoadingMedicalProfile] = useState(false);
+
+  // Load patient medical profile on demand
+  useEffect(() => {
+    if (!selectedPatientId || !buildingId) {
+      setPatientMedicalProfile(null);
+      return;
+    }
+    setLoadingMedicalProfile(true);
+    const patientRef = ref(db, `guests/${buildingId}/${selectedPatientId}`);
+    const unsubscribe = onValue(patientRef, (snapshot) => {
+      setPatientMedicalProfile(snapshot.val());
+      setLoadingMedicalProfile(false);
+    }, () => {
+      setLoadingMedicalProfile(false);
+    });
+    return () => unsubscribe();
+  }, [selectedPatientId, buildingId]);
 
   // Logout
   const handleLogout = async () => {
@@ -79,7 +103,7 @@ export default function AdminDashboard() {
     });
 
     return () => { unCrises(); unGuests(); unStaff(); unServices(); };
-  }, []);
+  }, [buildingId]);
 
   // Auto-Escalation Logic
   useEffect(() => {
@@ -103,7 +127,7 @@ export default function AdminDashboard() {
     }, 5000); // Check every 5 seconds
 
     return () => clearInterval(interval);
-  }, [crises]);
+  }, [crises, buildingId]);
 
   // Derived Stats
   const activeCrises = crises.filter(c => c.status !== 'RESOLVED' && c.status !== 'FALSE_ALARM');
@@ -315,6 +339,17 @@ export default function AdminDashboard() {
 
                     <div className="p-4 flex flex-wrap gap-2 border-t border-card-border bg-black/30">
                       <a href={`tel:${crisis.raisedBy.mobile}`} className="px-4 py-2 bg-dark-bg border border-card-border rounded hover:bg-card-border flex items-center gap-2 text-sm font-semibold"><Phone size={14}/> Caller</a>
+                      {crisis.raisedBy.role === 'guest' && (
+                        <button 
+                          onClick={() => {
+                            setSelectedPatientId(crisis.raisedBy.userId);
+                            setSelectedPatientName(crisis.raisedBy.name);
+                          }}
+                          className="px-4 py-2 bg-info/20 hover:bg-info/30 text-info font-bold border border-info/30 rounded flex items-center gap-2 text-sm transition"
+                        >
+                          ⚕️ Medical Profile
+                        </button>
+                      )}
                       <div className="ml-auto flex gap-2">
                         <button onClick={() => handleFalseAlarm(crisis.sosId)} className="px-4 py-2 bg-dark-bg border border-alert-red text-alert-red hover:bg-alert-red hover:text-white rounded font-bold text-sm transition">Mark as Fake</button>
                         <button onClick={() => handleResolve(crisis.sosId)} className="px-4 py-2 bg-success hover:bg-green-600 text-white rounded font-bold text-sm transition">Mark Resolved</button>
@@ -334,23 +369,88 @@ export default function AdminDashboard() {
             <div className="bg-card-bg border border-card-border rounded-xl overflow-hidden">
               <table className="w-full text-left text-sm">
                 <thead className="bg-dark-bg text-text-secondary">
-                  <tr><th className="p-4">Type</th><th className="p-4">Guest</th><th className="p-4">Room</th><th className="p-4">Assigned To</th><th className="p-4">Status</th></tr>
+                  <tr>
+                    <th className="p-4">Request / Type</th>
+                    <th className="p-4">Patient</th>
+                    <th className="p-4">Room</th>
+                    <th className="p-4">Assigned To</th>
+                    <th className="p-4">AI Triage</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-card-border">
-                  {services.filter(s => s.status !== 'COMPLETED').map(s => (
-                    <tr key={s.requestId} className="hover:bg-dark-bg/50">
-                      <td className="p-4 font-bold">{s.type}</td>
-                      <td className="p-4">{s.raisedBy.name}</td>
-                      <td className="p-4">{s.raisedBy.roomNumber}</td>
-                      <td className="p-4 font-semibold">{s.acceptedBy ? s.acceptedBy.name : <span className="text-warning italic">Pending Assignment...</span>}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'PENDING' ? 'bg-warning/20 text-warning' : 'bg-info/20 text-info'}`}>
-                          {s.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {services.filter(s => s.status !== 'COMPLETED').length === 0 && <tr><td colSpan="5" className="p-8 text-center text-text-secondary">No active service requests right now.</td></tr>}
+                  {services.filter(s => s.status !== 'COMPLETED').map(s => {
+                    const isCustom = s.type.startsWith('Custom: ');
+                    const customText = isCustom ? s.type.replace('Custom: ', '') : '';
+                    return (
+                      <tr key={s.requestId} className="hover:bg-dark-bg/50 transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-white">
+                            {isCustom ? '📝 Custom Request' : s.type}
+                          </div>
+                          {isCustom && (
+                            <p className="text-xs text-text-secondary italic mt-1 bg-dark-bg/40 p-2 rounded border border-card-border/40 max-w-md">
+                              &quot;{customText}&quot;
+                            </p>
+                          )}
+                        </td>
+                        <td className="p-4 font-semibold text-white">{s.raisedBy.name}</td>
+                        <td className="p-4 font-mono text-white">{s.raisedBy.roomNumber || 'N/A'}</td>
+                        <td className="p-4 font-semibold">
+                          {s.acceptedBy ? (
+                            <span className="text-white">{s.acceptedBy.name}</span>
+                          ) : (
+                            <span className="text-warning italic">Pending Assignment...</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {s.aiAnalysis ? (
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex gap-1.5 flex-wrap">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-info/20 text-info border border-info/30">
+                                  Category: {s.aiAnalysis.suggestedCategory}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border ${
+                                  s.aiAnalysis.urgency === 'HIGH' || s.aiAnalysis.urgency === 'CRITICAL'
+                                    ? 'bg-alert-red/20 text-alert-red border-alert-red/30'
+                                    : s.aiAnalysis.urgency === 'MEDIUM'
+                                    ? 'bg-warning/20 text-warning border-warning/30'
+                                    : 'bg-text-secondary/20 text-text-secondary border-card-border'
+                                }`}>
+                                  Urgency: {s.aiAnalysis.urgency}
+                                </span>
+                              </div>
+                              {s.aiAnalysis.englishTranslation && s.aiAnalysis.englishTranslation !== customText && (
+                                <p className="text-[10px] text-text-secondary italic">
+                                  Trans: &quot;{s.aiAnalysis.englishTranslation}&quot;
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-text-secondary">-</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'PENDING' ? 'bg-warning/20 text-warning' : 'bg-info/20 text-info'}`}>
+                            {s.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={() => {
+                              setSelectedPatientId(s.raisedBy.userId);
+                              setSelectedPatientName(s.raisedBy.name);
+                            }}
+                            className="px-2.5 py-1 bg-info/10 hover:bg-info/20 text-info font-bold rounded border border-info/20 text-xs transition-all inline-flex items-center gap-1"
+                          >
+                            ⚕️ Medical Profile
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {services.filter(s => s.status !== 'COMPLETED').length === 0 && <tr><td colSpan="7" className="p-8 text-center text-text-secondary">No active service requests right now.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -364,18 +464,42 @@ export default function AdminDashboard() {
             <div className="bg-card-bg border border-card-border rounded-xl overflow-hidden">
               <table className="w-full text-left text-sm">
                 <thead className="bg-dark-bg text-text-secondary">
-                  <tr><th className="p-4">Name</th><th className="p-4">Room</th><th className="p-4">Mobile</th><th className="p-4">Joined</th></tr>
+                  <tr>
+                    <th className="p-4">Name</th>
+                    <th className="p-4">Room</th>
+                    <th className="p-4">Mobile</th>
+                    <th className="p-4">Joined</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-card-border">
                   {guests.map(g => (
-                    <tr key={g.userId} className="hover:bg-dark-bg/50">
-                      <td className="p-4 font-bold">{g.name}</td>
-                      <td className="p-4">{g.roomNumber}</td>
-                      <td className="p-4">{g.mobile}</td>
+                    <tr 
+                      key={g.userId} 
+                      onClick={() => {
+                        setSelectedPatientId(g.userId);
+                        setSelectedPatientName(g.name);
+                      }}
+                      className="hover:bg-dark-bg/50 cursor-pointer transition-colors"
+                    >
+                      <td className="p-4 font-bold text-white">{g.name}</td>
+                      <td className="p-4 font-mono">{g.roomNumber || 'N/A'}</td>
+                      <td className="p-4 font-mono">{g.mobile}</td>
                       <td className="p-4 text-text-secondary">{new Date(g.joinedAt).toLocaleString()}</td>
+                      <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setSelectedPatientId(g.userId);
+                            setSelectedPatientName(g.name);
+                          }}
+                          className="px-3 py-1.5 bg-info/20 hover:bg-info/30 text-info font-bold rounded-lg border border-info/30 text-xs transition-all inline-flex items-center gap-1"
+                        >
+                          ⚕️ Medical Profile
+                        </button>
+                      </td>
                     </tr>
                   ))}
-                  {guests.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-text-secondary">No patients currently checked into network.</td></tr>}
+                  {guests.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-text-secondary">No patients currently checked into network.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -545,6 +669,88 @@ export default function AdminDashboard() {
         )}
 
       </main>
+
+      {/* Patient Medical Profile Modal */}
+      {selectedPatientId && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-card-bg border border-card-border w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
+            <button 
+              onClick={() => setSelectedPatientId(null)} 
+              className="absolute top-4 right-4 text-text-secondary hover:text-white"
+            >
+              <X size={24} />
+            </button>
+            
+            <div className="bg-info/20 p-6 border-b border-info/30">
+              <h2 className="text-xl font-bold text-info flex items-center gap-2">
+                ⚕️ Medical Profile: {selectedPatientName}
+              </h2>
+              <p className="text-xs text-text-secondary mt-1">Accessing hospital file vault...</p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {loadingMedicalProfile ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 size={32} className="animate-spin text-info mb-2" />
+                  <p className="text-text-secondary text-sm">Retrieving medical files...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Medications & Conditions */}
+                  <div>
+                    <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Active Medications & Conditions</h3>
+                    <div className="bg-dark-bg border border-card-border p-4 rounded-xl text-sm">
+                      {patientMedicalProfile?.medicationList ? (
+                        <p className="text-white whitespace-pre-wrap font-medium">{patientMedicalProfile.medicationList}</p>
+                      ) : (
+                        <p className="text-text-secondary italic">No medications or conditions reported by patient.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Uploaded Files */}
+                  <div>
+                    <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Patient Uploaded Reports</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {!patientMedicalProfile?.reports || Object.keys(patientMedicalProfile.reports).length === 0 ? (
+                        <p className="text-xs text-text-secondary italic text-center py-4">No reports uploaded to vault.</p>
+                      ) : (
+                        Object.values(patientMedicalProfile.reports).map(report => (
+                          <div key={report.reportId} className="bg-dark-bg border border-card-border p-3 rounded-lg flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <FileText size={18} className="text-info flex-shrink-0" />
+                              <a 
+                                href={report.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="font-semibold truncate hover:text-info hover:underline text-white"
+                              >
+                                {report.name}
+                              </a>
+                            </div>
+                            <span className="text-[10px] text-text-secondary">
+                              {new Date(report.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="p-4 bg-black/20 border-t border-card-border flex justify-end">
+              <button 
+                onClick={() => setSelectedPatientId(null)} 
+                className="px-4 py-2 bg-dark-bg border border-card-border hover:bg-card-border rounded font-bold text-sm text-white transition"
+              >
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
