@@ -30,8 +30,11 @@ export default function Onboarding() {
   const [profession, setProfession] = useState('');
   const [staffId, setStaffId] = useState('');
 
-  // Auto-redirect if already checked into this building
+  // Auto-redirect if already checked into this building (unless manually entered)
   useEffect(() => {
+    const isManual = new URLSearchParams(location.search).get('manual') === 'true';
+    if (isManual) return;
+
     if (user && user.buildingId === buildingId) {
       if (user.role === 'guest') {
         navigate('/guest');
@@ -39,7 +42,7 @@ export default function Onboarding() {
         navigate('/staff');
       }
     }
-  }, [user, buildingId, navigate]);
+  }, [user, buildingId, navigate, location.search]);
 
   useEffect(() => {
     const fetchBuilding = async () => {
@@ -139,6 +142,28 @@ export default function Onboarding() {
         >
           <ArrowLeft size={16} /> Back to Home
         </button>
+
+        {user && user.buildingId === buildingId && (
+          <div className="w-full max-w-2xl bg-card-bg border border-primary-red/30 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+            <div className="text-sm text-text-secondary text-center sm:text-left">
+              👋 You are already registered as <span className="text-white font-bold">{user.name}</span> ({user.role === 'guest' ? 'Patient' : 'Staff'}) for this facility.
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button 
+                onClick={() => navigate(user.role === 'guest' ? '/guest' : '/staff')} 
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-primary-red hover:bg-alert-red text-white text-xs font-bold rounded-xl transition shadow-lg shadow-primary-red/20"
+              >
+                Go to Dashboard
+              </button>
+              <button 
+                onClick={() => setUser(null)} 
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-dark-bg border border-card-border hover:bg-card-border text-white text-xs font-bold rounded-xl transition"
+              >
+                Switch Account
+              </button>
+            </div>
+          </div>
+        )}
 
         <h2 className="text-3xl font-bold mb-2 text-white">Who are you?</h2>
         <p className="text-text-secondary mb-8 text-center">{buildingName}</p>

@@ -185,7 +185,7 @@ export default function QRScanner() {
             />
             <button 
               onClick={() => {
-                if (manualId.trim()) navigate(`/onboarding/${manualId.trim()}`);
+                if (manualId.trim()) navigate(`/onboarding/${manualId.trim()}?manual=true`);
               }}
               className="bg-info hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition"
             >
