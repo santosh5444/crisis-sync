@@ -217,6 +217,23 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
                               {matchedItem.description && (
                                 <span className="text-text-secondary line-clamp-1 italic">&quot;{matchedItem.description}&quot;</span>
                               )}
+                              {matchedItem.reportedBy && (
+                                <div className="mt-2 pt-2 border-t border-warning/10 flex items-center justify-between">
+                                  <div>
+                                    <span className="text-[9px] text-text-secondary uppercase block">Contact {matchedItem.type === 'LOST' ? 'Owner' : 'Finder'}</span>
+                                    <span className="font-semibold text-white">{matchedItem.reportedBy.name}</span>
+                                  </div>
+                                  {matchedItem.reportedBy.mobile && (
+                                    <a 
+                                      href={`tel:${matchedItem.reportedBy.mobile}`}
+                                      className="bg-info hover:bg-blue-600 text-white p-1 rounded-full transition flex items-center justify-center"
+                                      title={`Call ${matchedItem.reportedBy.name}`}
+                                    >
+                                      <Phone size={10} fill="currentColor" />
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
