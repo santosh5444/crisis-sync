@@ -711,11 +711,11 @@ export default function GuestDashboard() {
 
                 {/* Recommendations */}
                 <div className="text-xs font-semibold py-1">
-                  {triageResult.isEmergency || triageResult.urgency === 'CRITICAL' ? (
+                  {triageResult.urgency === 'CRITICAL' ? (
                     <p className="text-alert-red flex items-center gap-1.5 animate-pulse">
                       ⚠️ WARNING: Highly critical request. SOS trigger is highly recommended.
                     </p>
-                  ) : triageResult.urgency === 'HIGH' ? (
+                  ) : (triageResult.urgency === 'HIGH' || triageResult.isEmergency) ? (
                     <p className="text-warning flex items-center gap-1.5">
                       ⚡ RECOMMENDED: Submit as an Urgent Request for rapid staff attention.
                     </p>
@@ -733,7 +733,7 @@ export default function GuestDashboard() {
                   <button 
                     onClick={handleConfirmSOS}
                     className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 shadow-md ${
-                      triageResult.isEmergency || triageResult.urgency === 'CRITICAL'
+                      triageResult.urgency === 'CRITICAL'
                         ? 'bg-primary-red hover:bg-alert-red text-white shadow-primary-red/20 animate-pulse border border-primary-red/50'
                         : 'bg-dark-bg hover:bg-alert-red/20 hover:text-alert-red text-text-secondary border border-card-border'
                     }`}
@@ -744,7 +744,7 @@ export default function GuestDashboard() {
                   <button 
                     onClick={handleConfirmUrgent}
                     className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 shadow-md ${
-                      triageResult.urgency === 'HIGH'
+                      triageResult.urgency === 'HIGH' || (triageResult.isEmergency && triageResult.urgency !== 'CRITICAL')
                         ? 'bg-warning text-black hover:brightness-110 shadow-warning/20 border border-warning/50'
                         : 'bg-dark-bg hover:bg-warning/20 hover:text-warning text-text-secondary border border-card-border'
                     }`}
@@ -756,7 +756,7 @@ export default function GuestDashboard() {
                 <button 
                   onClick={handleConfirmNormal}
                   className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 shadow-md ${
-                    triageResult.urgency !== 'CRITICAL' && triageResult.urgency !== 'HIGH'
+                    triageResult.urgency !== 'CRITICAL' && triageResult.urgency !== 'HIGH' && !triageResult.isEmergency
                       ? 'bg-info hover:bg-blue-600 text-white shadow-info/20'
                       : 'bg-dark-bg hover:bg-card-border text-white border border-card-border'
                   }`}
