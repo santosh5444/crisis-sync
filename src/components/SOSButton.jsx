@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import SOSModal from './SOSModal';
 import { useAppContext } from '../context/AppContext';
+import { useLocation } from 'react-router-dom';
 
 export default function SOSButton() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAppContext();
+  const location = useLocation();
 
-  // If no user context (e.g. on landing page before login), we might want to hide it or redirect.
-  // For now, let's keep it visible everywhere, but modal handles logic.
-  
-  if (!user) return null; // Only show if logged in to a building
+  const allowedPaths = ['/guest', '/staff'];
+
+  if (!user || !allowedPaths.includes(location.pathname)) return null; // Only show if logged in and on a dashboard
 
   return (
     <>

@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { HOSPITAL_PROFESSIONS } from '../utils/constants';
 import { useAppContext } from '../context/AppContext';
-import { ref, set, get } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { db } from '../firebase/config';
 
 export default function Onboarding() {
@@ -96,7 +96,7 @@ export default function Onboarding() {
           joinedAt: timestamp,
           fcmToken: 'mock_token' // Would get real FCM token here
         };
-        await set(ref(db, `guests/${buildingId}/${userId}`), guestData);
+        await update(ref(db, `guests/${buildingId}/${userId}`), guestData);
         setUser(guestData);
         navigate('/guest');
       } else {
@@ -113,7 +113,7 @@ export default function Onboarding() {
           joinedAt: timestamp,
           fcmToken: 'mock_token'
         };
-        await set(ref(db, `staff/${buildingId}/${userId}`), staffData);
+        await update(ref(db, `staff/${buildingId}/${userId}`), staffData);
         setUser(staffData);
         navigate('/staff');
       }

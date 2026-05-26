@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { db, storage } from '../firebase/config';
 import { ref, onValue, query, limitToLast, set, push, serverTimestamp, update, remove } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -26,6 +26,7 @@ export default function GuestDashboard() {
   const [isSavingMeds, setIsSavingMeds] = useState(false);
   const [reports, setReports] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const isMedsDirtyRef = useRef(false);
 
   useEffect(() => {
     if (!user?.buildingId) return;
@@ -86,10 +87,14 @@ export default function GuestDashboard() {
     const unProfile = onValue(patientProfileRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setMedsText(data.medicationList || '');
+        if (!isMedsDirtyRef.current) {
+          setMedsText(data.medicationList || '');
+        }
         setReports(data.reports ? Object.values(data.reports).sort((a,b) => b.timestamp - a.timestamp) : []);
       } else {
-        setMedsText('');
+        if (!isMedsDirtyRef.current) {
+          setMedsText('');
+        }
         setReports([]);
       }
     });
@@ -215,6 +220,7 @@ export default function GuestDashboard() {
       await update(ref(db, `guests/${user.buildingId}/${user.userId}`), {
         medicationList: medsText
       });
+      isMedsDirtyRef.current = false;
       import('react-hot-toast').then(m => m.default.success("Medical List Saved!"));
     } catch (err) {
       console.error(err);
@@ -245,7 +251,11 @@ export default function GuestDashboard() {
       import('react-hot-toast').then(m => m.default.success("Medical Report Uploaded!"));
     } catch (err) {
       console.error(err);
-      import('react-hot-toast').then(m => m.default.error("Failed to upload report."));
+      let errorMsg = "Failed to upload report.";
+      if (err.code === 'storage/unknown' || err.message?.includes('404')) {
+        errorMsg = "Storage Bucket not found. Please ensure Firebase Storage is enabled in the Firebase Console (under the Storage tab).";
+      }
+      import('react-hot-toast').then(m => m.default.error(errorMsg, { duration: 6000 }));
     } finally {
       setUploadingFile(false);
     }
@@ -381,7 +391,10 @@ export default function GuestDashboard() {
             <div className="flex flex-col gap-2">
               <textarea
                 value={medsText}
-                onChange={e => setMedsText(e.target.value)}
+                onChange={e => {
+                  setMedsText(e.target.value);
+                  isMedsDirtyRef.current = true;
+                }}
                 placeholder="e.g. Taking Metformin 500mg, allergic to Penicillin, history of high blood pressure."
                 className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-info text-sm h-24 resize-none transition-colors"
               />

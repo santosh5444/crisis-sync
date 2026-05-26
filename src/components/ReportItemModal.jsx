@@ -77,7 +77,11 @@ export default function ReportItemModal({ isOpen, onClose }) {
       onClose();
     } catch (error) {
       console.error("Report Error:", error);
-      toast.error("Failed to report item. Please try again.");
+      let errorMsg = "Failed to report item. Please try again.";
+      if (error.code === 'storage/unknown' || error.message?.includes('404')) {
+        errorMsg = "Failed to upload image: Storage Bucket not found. Please enable Firebase Storage in the Console.";
+      }
+      toast.error(errorMsg, { duration: 6000 });
     } finally {
       setLoading(false);
       setTitle('');
