@@ -432,7 +432,13 @@ export default function AdminDashboard() {
                           )}
                         </td>
                         <td className="p-4">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'PENDING' ? 'bg-warning/20 text-warning' : 'bg-info/20 text-info'}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${
+                            s.status === 'URGENT'
+                              ? 'bg-alert-red/20 text-alert-red border border-alert-red/30 animate-pulse'
+                              : s.status === 'PENDING'
+                              ? 'bg-warning/20 text-warning'
+                              : 'bg-info/20 text-info'
+                          }`}>
                             {s.status}
                           </span>
                         </td>

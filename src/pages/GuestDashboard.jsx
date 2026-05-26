@@ -5,6 +5,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'fi
 import { useAppContext } from '../context/AppContext';
 import { ShieldCheck, AlertCircle, Search, ArrowLeft, FileText, Upload, Trash2, Loader2, Sparkles, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
 import ReportItemModal from '../components/ReportItemModal';
 import { HOSPITAL_SERVICES } from '../utils/constants';
@@ -27,6 +28,8 @@ export default function GuestDashboard() {
   const [reports, setReports] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
   const isMedsDirtyRef = useRef(false);
+  const [triageResult, setTriageResult] = useState(null);
+  const [isTriageModalOpen, setIsTriageModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user?.buildingId) return;
@@ -147,64 +150,95 @@ export default function GuestDashboard() {
     try {
       import('react-hot-toast').then(m => m.default("AI triaging request...", { icon: '🤖' }));
       const aiTriage = await analyzeServiceRequest(customText);
+      setTriageResult(aiTriage);
+      setIsTriageModalOpen(true);
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to submit request."));
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
-      if (aiTriage.isEmergency) {
-        if (window.confirm(`⚠️ AI Warning: Your request was triaged as a CRITICAL EMERGENCY. Direct message: "${aiTriage.flagReason}".\n\nWould you like to trigger an SOS alarm immediately?`)) {
-          const crisisId = `sos_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-          const location = user.roomNumber || 'Unknown Location';
-          
-          const aiAnalysis = await analyzeCrisis(aiTriage.suggestedCategory, customText, location);
-          
-          const crisisData = {
-            sosId: crisisId,
-            raisedBy: user,
-            type: aiTriage.suggestedCategory,
-            description: customText,
-            severity: aiAnalysis.severity,
-            status: 'PENDING',
-            buildingId: user.buildingId,
-            timestamp: serverTimestamp(),
-            geminiAnalysis: aiAnalysis,
-            autoEscalated: false
-          };
+  const handleConfirmSOS = async () => {
+    setIsTriageModalOpen(false);
+    setAiLoading(true);
+    try {
+      const crisisId = `sos_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const location = user.roomNumber || 'Unknown Location';
+      const aiAnalysis = await analyzeCrisis(triageResult.suggestedCategory, customText, location);
+      
+      const crisisData = {
+        sosId: crisisId,
+        raisedBy: user,
+        type: triageResult.suggestedCategory,
+        description: customText,
+        severity: aiAnalysis.severity,
+        status: 'PENDING',
+        buildingId: user.buildingId,
+        timestamp: serverTimestamp(),
+        geminiAnalysis: aiAnalysis,
+        autoEscalated: false
+      };
 
-          await set(ref(db, `crises/${user.buildingId}/${crisisId}`), crisisData);
-          import('react-hot-toast').then(m => m.default.success("SOS Alert triggered automatically! Help is on the way."));
-        } else {
-          import('react-hot-toast').then(m => m.default.error("SOS canceled. Regular request filed instead."));
-          const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
-          await set(newRef, {
-            requestId: newRef.key,
-            type: `Custom: ${customText}`,
-            status: 'PENDING',
-            timestamp: serverTimestamp(),
-            raisedBy: {
-              userId: user.userId,
-              name: user.name,
-              roomNumber: user.roomNumber,
-              mobile: user.mobile
-            },
-            aiAnalysis: aiTriage
-          });
-          import('react-hot-toast').then(m => m.default.success("Request sent."));
-        }
-      } else {
-        const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
-        await set(newRef, {
-          requestId: newRef.key,
-          type: `Custom: ${customText}`,
-          status: 'PENDING',
-          timestamp: serverTimestamp(),
-          raisedBy: {
-            userId: user.userId,
-            name: user.name,
-            roomNumber: user.roomNumber,
-            mobile: user.mobile
-          },
-          aiAnalysis: aiTriage
-        });
-        import('react-hot-toast').then(m => m.default.success(`Request sent. Categorized as: ${aiTriage.suggestedCategory}`));
-      }
+      await set(ref(db, `crises/${user.buildingId}/${crisisId}`), crisisData);
+      import('react-hot-toast').then(m => m.default.success("SOS Alert triggered automatically! Help is on the way."));
+      setCustomText('');
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to trigger SOS alert."));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleConfirmUrgent = async () => {
+    setIsTriageModalOpen(false);
+    setAiLoading(true);
+    try {
+      const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
+      await set(newRef, {
+        requestId: newRef.key,
+        type: `Custom: ${customText}`,
+        status: 'URGENT',
+        timestamp: serverTimestamp(),
+        raisedBy: {
+          userId: user.userId,
+          name: user.name,
+          roomNumber: user.roomNumber,
+          mobile: user.mobile
+        },
+        aiAnalysis: triageResult
+      });
+      import('react-hot-toast').then(m => m.default.success("Urgent Request sent to staff!"));
+      setCustomText('');
+    } catch (err) {
+      console.error(err);
+      import('react-hot-toast').then(m => m.default.error("Failed to submit request."));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleConfirmNormal = async () => {
+    setIsTriageModalOpen(false);
+    setAiLoading(true);
+    try {
+      const newRef = push(ref(db, `serviceRequests/${user.buildingId}`));
+      await set(newRef, {
+        requestId: newRef.key,
+        type: `Custom: ${customText}`,
+        status: 'PENDING',
+        timestamp: serverTimestamp(),
+        raisedBy: {
+          userId: user.userId,
+          name: user.name,
+          roomNumber: user.roomNumber,
+          mobile: user.mobile
+        },
+        aiAnalysis: triageResult
+      });
+      import('react-hot-toast').then(m => m.default.success(`Request sent. Categorized as: ${triageResult.suggestedCategory}`));
       setCustomText('');
     } catch (err) {
       console.error(err);
@@ -594,6 +628,149 @@ export default function GuestDashboard() {
       </section>
 
       <ReportItemModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
+
+      {/* Triage Interactive Modal */}
+      <AnimatePresence>
+        {isTriageModalOpen && triageResult && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-card-bg border border-card-border w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative"
+            >
+              {/* Header */}
+              <div className={`p-6 border-b border-card-border ${
+                triageResult.isEmergency || triageResult.urgency === 'CRITICAL'
+                  ? 'bg-alert-red/20 border-alert-red/30'
+                  : triageResult.urgency === 'HIGH'
+                  ? 'bg-warning/20 border-warning/30'
+                  : 'bg-info/20 border-info/30'
+              }`}>
+                <h3 className={`text-xl font-bold flex items-center gap-2 ${
+                  triageResult.isEmergency || triageResult.urgency === 'CRITICAL'
+                    ? 'text-alert-red'
+                    : triageResult.urgency === 'HIGH'
+                    ? 'text-warning'
+                    : 'text-info'
+                }`}>
+                  🤖 AI Request Triage Analysis
+                </h3>
+                <p className="text-xs text-text-secondary mt-1">Smart classification for hospital personnel</p>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                <div className="bg-dark-bg/60 p-4 rounded-xl border border-card-border">
+                  <p className="text-xs text-text-secondary uppercase font-bold mb-1">Your Request</p>
+                  <p className="text-white text-sm font-medium italic">&quot;{customText}&quot;</p>
+                  {triageResult.englishTranslation && triageResult.englishTranslation !== customText && (
+                    <div className="mt-2 border-t border-card-border/40 pt-2">
+                      <p className="text-[11px] text-text-secondary uppercase font-bold">English Translation</p>
+                      <p className="text-info text-sm italic">&quot;{triageResult.englishTranslation}&quot;</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-dark-bg/40 p-3 rounded-lg border border-card-border">
+                    <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Urgency Level</p>
+                    <span className={`px-2 py-0.5 rounded text-xs font-black inline-block ${
+                      triageResult.urgency === 'CRITICAL'
+                        ? 'bg-severity-critical text-white'
+                        : triageResult.urgency === 'HIGH'
+                        ? 'bg-severity-high text-white'
+                        : triageResult.urgency === 'MEDIUM'
+                        ? 'bg-severity-medium text-black'
+                        : 'bg-severity-low text-black'
+                    }`}>
+                      {triageResult.urgency}
+                    </span>
+                  </div>
+                  <div className="bg-dark-bg/40 p-3 rounded-lg border border-card-border">
+                    <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Suggested Service</p>
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-info/20 text-info border border-info/30 inline-block">
+                      {triageResult.suggestedCategory}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-dark-bg/30 p-4 rounded-lg border border-card-border text-xs text-text-secondary space-y-1">
+                  <p className="font-bold text-white uppercase text-[10px]">AI Assessment Details:</p>
+                  <p>&quot;{triageResult.flagReason || 'Request analyzed successfully.'}&quot;</p>
+                </div>
+
+                {/* Recommendations */}
+                <div className="text-xs font-semibold py-1">
+                  {triageResult.isEmergency || triageResult.urgency === 'CRITICAL' ? (
+                    <p className="text-alert-red flex items-center gap-1.5 animate-pulse">
+                      ⚠️ WARNING: Highly critical request. SOS trigger is highly recommended.
+                    </p>
+                  ) : triageResult.urgency === 'HIGH' ? (
+                    <p className="text-warning flex items-center gap-1.5">
+                      ⚡ RECOMMENDED: Submit as an Urgent Request for rapid staff attention.
+                    </p>
+                  ) : (
+                    <p className="text-success flex items-center gap-1.5">
+                      ✅ RECOMMENDED: Submit as a Standard Request.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="p-6 bg-black/20 border-t border-card-border flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={handleConfirmSOS}
+                    className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 shadow-md ${
+                      triageResult.isEmergency || triageResult.urgency === 'CRITICAL'
+                        ? 'bg-primary-red hover:bg-alert-red text-white shadow-primary-red/20 animate-pulse border border-primary-red/50'
+                        : 'bg-dark-bg hover:bg-alert-red/20 hover:text-alert-red text-text-secondary border border-card-border'
+                    }`}
+                  >
+                    🚨 Trigger SOS
+                  </button>
+
+                  <button 
+                    onClick={handleConfirmUrgent}
+                    className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 shadow-md ${
+                      triageResult.urgency === 'HIGH'
+                        ? 'bg-warning text-black hover:brightness-110 shadow-warning/20 border border-warning/50'
+                        : 'bg-dark-bg hover:bg-warning/20 hover:text-warning text-text-secondary border border-card-border'
+                    }`}
+                  >
+                    ⚡ Urgent Request
+                  </button>
+                </div>
+
+                <button 
+                  onClick={handleConfirmNormal}
+                  className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 shadow-md ${
+                    triageResult.urgency !== 'CRITICAL' && triageResult.urgency !== 'HIGH'
+                      ? 'bg-info hover:bg-blue-600 text-white shadow-info/20'
+                      : 'bg-dark-bg hover:bg-card-border text-white border border-card-border'
+                  }`}
+                >
+                  📋 Submit Standard Request
+                </button>
+
+                <button 
+                  onClick={() => setIsTriageModalOpen(false)}
+                  className="py-2.5 bg-transparent hover:bg-card-border text-text-secondary hover:text-white rounded-lg text-xs font-bold transition mt-1"
+                >
+                  Cancel Request
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

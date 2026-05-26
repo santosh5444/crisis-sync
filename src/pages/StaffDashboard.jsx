@@ -102,7 +102,7 @@ export default function StaffDashboard() {
     const serviceRef = ref(db, `serviceRequests/${user.buildingId}/${serviceId}`);
     try {
       const result = await runTransaction(serviceRef, (currentData) => {
-        if (currentData && currentData.status === 'PENDING') {
+        if (currentData && (currentData.status === 'PENDING' || currentData.status === 'URGENT')) {
           currentData.status = 'ACCEPTED';
           currentData.acceptedBy = {
             staffId: user.staffId || user.userId,
@@ -153,7 +153,7 @@ export default function StaffDashboard() {
 
   const pendingCrises = crises.filter(c => c.status === 'PENDING');
   const verifiedCrises = crises.filter(c => c.status === 'VERIFIED_REAL');
-  const pendingServices = services.filter(s => s.status === 'PENDING');
+  const pendingServices = services.filter(s => s.status === 'PENDING' || s.status === 'URGENT');
   const myServices = services.filter(s => s.status === 'ACCEPTED' && s.acceptedBy?.staffId === (user.staffId || user.userId));
 
   if (!user || user.role !== 'staff') {
@@ -361,12 +361,17 @@ export default function StaffDashboard() {
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.9, opacity: 0 }}
-                  className="bg-card-bg border border-warning/50 p-5 rounded-xl flex flex-col justify-between"
+                  className={`bg-card-bg border p-5 rounded-xl flex flex-col justify-between ${
+                    req.status === 'URGENT' 
+                      ? 'border-alert-red shadow-[0_0_10px_rgba(255,24,68,0.1)]' 
+                      : 'border-warning/50'
+                  }`}
                 >
                   <div>
                     <div className="flex justify-between items-start mb-2 flex-wrap gap-1">
-                      <span className="text-warning font-bold text-lg">
+                      <span className={`font-bold text-lg ${req.status === 'URGENT' ? 'text-alert-red' : 'text-warning'}`}>
                         {req.type.startsWith('Custom: ') ? 'Custom Request' : req.type}
+                        {req.status === 'URGENT' && <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-alert-red/20 text-alert-red border border-alert-red/30 uppercase tracking-wide">Urgent</span>}
                       </span>
                       <span className="text-xs text-text-secondary">{Math.floor((Date.now() - req.timestamp) / 60000)}m ago</span>
                     </div>
@@ -414,7 +419,13 @@ export default function StaffDashboard() {
                   <button 
                     onClick={() => handleAcceptService(req.requestId)}
                     disabled={!onlineStatus}
-                    className={`w-full py-3 rounded-lg font-bold transition-all shadow-lg ${onlineStatus ? 'bg-warning hover:bg-yellow-600 text-black shadow-warning/20' : 'bg-card-border text-text-secondary cursor-not-allowed'}`}
+                    className={`w-full py-3 rounded-lg font-bold transition-all shadow-lg ${
+                      !onlineStatus 
+                        ? 'bg-card-border text-text-secondary cursor-not-allowed'
+                        : req.status === 'URGENT'
+                        ? 'bg-alert-red hover:bg-red-700 text-white shadow-primary-red/10'
+                        : 'bg-warning hover:bg-yellow-600 text-black shadow-warning/20'
+                    }`}
                   >
                     {onlineStatus ? 'Accept Request' : 'Offline'}
                   </button>
