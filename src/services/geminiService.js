@@ -110,7 +110,7 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
       suggestedCategory,
       urgency,
       englishTranslation: text,
-      flagReason: "Local matching rule-based fallback"
+      flagReason: `Local matching rule-based fallback (Error: ${error.message || error})`
     };
   }
 }
