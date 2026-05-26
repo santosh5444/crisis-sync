@@ -89,6 +89,17 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
         ))}
       </div>
 
+      {/* AI Diagnostics Panel */}
+      <div className="mb-6 bg-black/60 border border-card-border p-4 rounded-xl text-xs font-mono space-y-1.5 max-w-lg">
+        <div className="font-bold text-warning uppercase text-[10px] tracking-wider mb-1 flex items-center gap-1.5">
+          <Sparkles size={12} /> AI Lost & Found Diagnostics
+        </div>
+        <div>Open Items Count: <span className="text-white font-bold">{items.filter(i => i.status === 'OPEN').length}</span></div>
+        <div>Matching Status: <span className="text-white font-bold">{matchingLoading ? 'Analyzing...' : 'Idle'}</span></div>
+        <div>Matches Found: <span className="text-success font-bold">{JSON.stringify(matches)}</span></div>
+        <div>API Error Log: <span className="text-alert-red font-bold">{matchError || 'None'}</span></div>
+      </div>
+
       {matchingLoading && (
         <div className="mb-4 text-xs text-text-secondary animate-pulse flex items-center gap-1.5 bg-card-bg/40 p-2.5 rounded-lg border border-card-border max-w-sm">
           <RefreshCw size={12} className="animate-spin text-info" />
