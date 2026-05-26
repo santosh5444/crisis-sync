@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldAlert, Zap, Clock, Users, Brain, Bell } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -10,8 +11,8 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col bg-dark-bg text-white font-inter">
       {/* Navbar */}
       <nav className="flex justify-between items-center p-6 bg-card-bg border-b border-card-border">
-        <div className="text-2xl font-bold text-primary-red tracking-tight flex items-center gap-2">
-          <ShieldAlert size={32} /> CrisisSync
+        <div onClick={() => navigate('/')} className="cursor-pointer">
+          <Logo size="md" variant="horizontal" />
         </div>
         <button onClick={() => navigate('/admin/login')} className="text-text-secondary hover:text-white font-semibold">
           Hospital Admin Login

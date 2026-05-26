@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginAdmin, registerAdmin } from '../firebase/auth';
 import toast from 'react-hot-toast';
-import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import Logo from '../components/Logo';
 import { ref, set, get } from 'firebase/database';
 import { db } from '../firebase/config';
 
@@ -94,11 +95,8 @@ export default function AdminLogin() {
 
       <div className="max-w-md w-full bg-card-bg p-8 rounded-2xl border border-card-border shadow-2xl relative overflow-hidden">
         <div className="flex justify-center mb-6 relative z-10">
-          <ShieldAlert size={48} className="text-primary-red" />
+          <Logo size="lg" variant="vertical" />
         </div>
-        <h2 className="text-2xl font-bold text-center text-white mb-2 relative z-10">
-          CrisisSync Admin
-        </h2>
         <p className="text-text-secondary text-center mb-8 relative z-10">
           {isLogin ? 'Secure Admin Login' : 'Register New Admin Authority'}
         </p>

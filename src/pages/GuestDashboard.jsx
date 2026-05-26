@@ -4,6 +4,7 @@ import { ref, onValue, query, limitToLast, set, push, serverTimestamp, update, r
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useAppContext } from '../context/AppContext';
 import { ShieldCheck, AlertCircle, Search, ArrowLeft, FileText, Upload, Trash2, Loader2, Sparkles, CheckCircle } from 'lucide-react';
+import Logo from '../components/Logo';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
@@ -323,6 +324,9 @@ export default function GuestDashboard() {
         >
           <ArrowLeft size={16} /> Back
         </button>
+        <div className="flex justify-center mb-4">
+          <Logo size="sm" variant="horizontal" />
+        </div>
         <h1 className="text-2xl font-bold mb-1">Welcome, {user.name}</h1>
         <p className="text-text-secondary text-sm">Room {user.roomNumber} • {user.buildingId}</p>
         

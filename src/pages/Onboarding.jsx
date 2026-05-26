@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Logo from '../components/Logo';
 import { HOSPITAL_PROFESSIONS } from '../utils/constants';
 import { useAppContext } from '../context/AppContext';
 import { ref, get, update } from 'firebase/database';
@@ -165,6 +166,9 @@ export default function Onboarding() {
           </div>
         )}
 
+        <div className="mb-6">
+          <Logo size="md" variant="vertical" />
+        </div>
         <h2 className="text-3xl font-bold mb-2 text-white">Who are you?</h2>
         <p className="text-text-secondary mb-8 text-center">{buildingName}</p>
         <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl">
@@ -200,9 +204,12 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-dark-bg">
       <div className="max-w-md w-full bg-card-bg p-8 rounded-xl border border-card-border shadow-xl">
-        <button onClick={() => setRole(null)} className="text-text-secondary mb-6 hover:text-white text-sm">
-          ← Back to roles
-        </button>
+        <div className="flex justify-between items-center mb-6 border-b border-card-border pb-4">
+          <Logo size="sm" variant="horizontal" />
+          <button onClick={() => setRole(null)} className="text-text-secondary hover:text-white text-sm">
+            ← Back
+          </button>
+        </div>
         <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
           {role === 'guest' 
             ? (facilityType === 'Hotel' ? '🛌 Guest Check-In' : '🛌 Patient/Visitor Entry')

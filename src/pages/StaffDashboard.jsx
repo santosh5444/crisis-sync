@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
 import ReportItemModal from '../components/ReportItemModal';
+import Logo from '../components/Logo';
 
 export default function StaffDashboard() {
   const { user, setUser } = useAppContext();
@@ -183,9 +184,12 @@ export default function StaffDashboard() {
           >
             <ArrowLeft size={16} /> Back
           </button>
-          <div>
-            <h1 className="text-xl font-bold">{user.name}</h1>
-            <p className="text-sm text-text-secondary">{user.facilityType || 'Facility'} • {user.profession} • {user.floor}</p>
+          <div className="flex items-center gap-3">
+            <Logo size="sm" variant="iconOnly" />
+            <div>
+              <h1 className="text-xl font-bold">{user.name}</h1>
+              <p className="text-sm text-text-secondary">{user.facilityType || 'Facility'} • {user.profession} • {user.floor}</p>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">

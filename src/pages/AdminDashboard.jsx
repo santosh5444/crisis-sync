@@ -10,6 +10,7 @@ import {
   LogOut, AlertTriangle, CheckCircle, Clock, MapPin, Phone, QrCode, Search,
   X, FileText, Loader2
 } from 'lucide-react';
+import Logo from '../components/Logo';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { QRCodeSVG } from 'qrcode.react';
 import { logoutAdmin } from '../firebase/auth';
@@ -212,8 +213,8 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="w-64 bg-card-bg border-r border-card-border flex flex-col hidden md:flex">
         <div className="p-6 border-b border-card-border flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-primary-red font-bold text-xl">
-            <ShieldAlert /> CrisisSync
+          <div className="flex items-center gap-2 font-bold">
+            <Logo size="sm" variant="horizontal" />
           </div>
           {adminProfile && (
             <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">

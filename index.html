@@ -6,6 +6,11 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CrisisSync | Hospital Crisis Response</title>
+  <script>
+    if (window.location.hostname === 'crisis-sync.netlify.app' || window.location.hostname === 'www.crisis-sync.netlify.app') {
+      window.location.replace('https://crisis-sync-upgraded.netlify.app' + window.location.pathname + window.location.search);
+    }
+  </script>
   <!-- Production Build -->
 </head>
 
