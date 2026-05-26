@@ -37,13 +37,27 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
   }, [user, isAdmin]);
 
   const detectMatches = async (openItems) => {
-    // A simplified client-side match check for newly added items
-    // In production, a serverless function is better.
     const latestItem = openItems[0];
     if (latestItem) {
-      const matchIds = await findPotentialMatches(latestItem, openItems.slice(1));
-      if (matchIds && matchIds.length > 0) {
-        setMatches(prev => ({ ...prev, [latestItem.itemId]: matchIds }));
+      try {
+        const matchIds = await findPotentialMatches(latestItem, openItems.slice(1));
+        if (matchIds && matchIds.length > 0) {
+          setMatches(prev => {
+            const updated = { ...prev, [latestItem.itemId]: matchIds };
+            // Bidirectional mapping so both items show they are matched
+            matchIds.forEach(id => {
+              if (!updated[id]) {
+                updated[id] = [];
+              }
+              if (!updated[id].includes(latestItem.itemId)) {
+                updated[id].push(latestItem.itemId);
+              }
+            });
+            return updated;
+          });
+        }
+      } catch (err) {
+        console.error("Match detection failed", err);
       }
     }
   };
@@ -138,9 +152,32 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
                     )}
                   </div>
 
-                  {matches[item.itemId] && (
-                    <div className="mb-4 bg-warning/20 border border-warning/50 text-warning px-3 py-2 rounded-lg text-xs flex items-center gap-2 font-bold animate-pulse">
-                      <Sparkles size={16}/> AI detected a potential match!
+                  {matches[item.itemId] && matches[item.itemId].length > 0 && (
+                    <div className="mb-4 bg-warning/20 border border-warning/50 text-warning p-3 rounded-lg text-xs flex flex-col gap-2 font-bold">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="animate-pulse" />
+                        <span>AI Detected Potential Match!</span>
+                      </div>
+                      <div className="space-y-1.5 font-normal pl-1">
+                        {matches[item.itemId].map(matchId => {
+                          const matchedItem = items.find(i => i.itemId === matchId);
+                          if (!matchedItem) return null;
+                          return (
+                            <div key={matchId} className="flex flex-col gap-0.5 bg-black/40 p-2 rounded border border-warning/30 text-[11px]">
+                              <div className="flex justify-between items-center">
+                                <span className={`px-1 rounded text-[9px] font-black text-white ${matchedItem.type === 'LOST' ? 'bg-alert-red' : 'bg-success'}`}>
+                                  {matchedItem.type}
+                                </span>
+                                <span className="text-[10px] text-text-secondary">Location: {matchedItem.location}</span>
+                              </div>
+                              <span className="font-bold text-white mt-1">{matchedItem.title}</span>
+                              {matchedItem.description && (
+                                <span className="text-text-secondary line-clamp-1 italic">&quot;{matchedItem.description}&quot;</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
