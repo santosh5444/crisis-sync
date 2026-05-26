@@ -73,7 +73,17 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
     if (filter === 'RESOLVED') {
       return item.status === 'RESOLVED';
     }
-    return item.status === 'OPEN' && (filter === 'ALL' || item.type === filter);
+    
+    if (item.status !== 'OPEN') return false;
+
+    // Security check: Hide other people's FOUND reports from guests to prevent false claims
+    const isGuest = !isAdmin && user?.role === 'guest';
+    if (isGuest && item.type === 'FOUND') {
+      const isMyReport = item.reportedBy?.userId === user?.userId;
+      if (!isMyReport) return false;
+    }
+
+    return filter === 'ALL' || item.type === filter;
   });
 
   return (
@@ -84,10 +94,17 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
             key={f} onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-full text-sm font-bold transition ${filter === f ? (f === 'RESOLVED' ? 'bg-info text-white' : f === 'LOST' ? 'bg-alert-red text-white' : f === 'FOUND' ? 'bg-success text-white' : 'bg-primary-red text-white') : 'bg-dark-bg border border-card-border text-text-secondary hover:text-white'}`}
           >
-            {f}
+            {f === 'FOUND' && !isAdmin && user?.role === 'guest' ? 'MY FOUND REPORTS' : f}
           </button>
         ))}
       </div>
+
+      {/* Security Privacy Notice for Guests */}
+      {!isAdmin && user?.role === 'guest' && (
+        <p className="text-[11px] text-text-secondary mb-6 italic bg-dark-bg/30 p-3 rounded-lg border border-card-border max-w-lg">
+          🔒 Security Notice: For security reasons, the general catalog of Found items is restricted. Guests only see their own Found reports. The AI will still match your Lost items behind the scenes.
+        </p>
+      )}
 
 
       {matchingLoading && (
