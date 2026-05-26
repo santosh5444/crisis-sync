@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { ref, onValue } from 'firebase/database';
 import { useAppContext } from '../context/AppContext';
@@ -13,6 +13,7 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
   const [matches, setMatches] = useState({});
   const [matchingLoading, setMatchingLoading] = useState(false);
   const [matchError, setMatchError] = useState(null);
+  const lastCheckedItemIdRef = useRef(null);
 
   useEffect(() => {
     const activeBuildingId = isAdmin ? localStorage.getItem('adminBuildingId') : user?.buildingId;
@@ -41,6 +42,10 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
   const detectMatches = async (openItems) => {
     const latestItem = openItems[0];
     if (latestItem && openItems.length > 1) {
+      if (lastCheckedItemIdRef.current === latestItem.itemId) {
+        return;
+      }
+      lastCheckedItemIdRef.current = latestItem.itemId;
       setMatchingLoading(true);
       setMatchError(null);
       try {
@@ -63,6 +68,7 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
       } catch (err) {
         console.error("Match detection failed", err);
         setMatchError(err.message || err);
+        lastCheckedItemIdRef.current = null; // Reset on failure to allow retry later
       } finally {
         setMatchingLoading(false);
       }
