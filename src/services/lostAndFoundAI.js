@@ -88,6 +88,6 @@ Return ONLY the JSON array exactly matching this format:
     return JSON.parse(text);
   } catch (error) {
     console.warn("Gemini Matching failed.", error);
-    return [];
+    throw error;
   }
 }

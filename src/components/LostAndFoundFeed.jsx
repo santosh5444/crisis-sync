@@ -3,7 +3,7 @@ import { db } from '../firebase/config';
 import { ref, onValue } from 'firebase/database';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, MapPin, Tag, Image as ImageIcon, Sparkles, CheckCircle } from 'lucide-react';
+import { Phone, MapPin, Tag, Image as ImageIcon, Sparkles, CheckCircle, RefreshCw } from 'lucide-react';
 import { findPotentialMatches } from '../services/lostAndFoundAI';
 
 export default function LostAndFoundFeed({ isAdmin = false }) {
@@ -11,6 +11,8 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('ALL'); // ALL, LOST, FOUND
   const [matches, setMatches] = useState({});
+  const [matchingLoading, setMatchingLoading] = useState(false);
+  const [matchError, setMatchError] = useState(null);
 
   useEffect(() => {
     const activeBuildingId = isAdmin ? localStorage.getItem('adminBuildingId') : user?.buildingId;
@@ -38,7 +40,9 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
 
   const detectMatches = async (openItems) => {
     const latestItem = openItems[0];
-    if (latestItem) {
+    if (latestItem && openItems.length > 1) {
+      setMatchingLoading(true);
+      setMatchError(null);
       try {
         const matchIds = await findPotentialMatches(latestItem, openItems.slice(1));
         if (matchIds && matchIds.length > 0) {
@@ -58,6 +62,9 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
         }
       } catch (err) {
         console.error("Match detection failed", err);
+        setMatchError(err.message || err);
+      } finally {
+        setMatchingLoading(false);
       }
     }
   };
@@ -81,6 +88,18 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
           </button>
         ))}
       </div>
+
+      {matchingLoading && (
+        <div className="mb-4 text-xs text-text-secondary animate-pulse flex items-center gap-1.5 bg-card-bg/40 p-2.5 rounded-lg border border-card-border max-w-sm">
+          <RefreshCw size={12} className="animate-spin text-info" />
+          <span>AI is analyzing items for potential matches...</span>
+        </div>
+      )}
+      {matchError && (
+        <div className="mb-4 text-xs text-alert-red bg-alert-red/10 border border-alert-red/20 p-2.5 rounded-lg flex items-center gap-1.5 max-w-md">
+          <span>⚠️ AI Match Check Failed: {matchError}</span>
+        </div>
+      )}
 
       {filter === 'RESOLVED' ? (
         <div className="bg-card-bg border border-card-border rounded-xl overflow-hidden">
