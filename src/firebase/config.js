@@ -21,6 +21,8 @@ const app = apps.length ? apps[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getDatabase(app);
 export const storage = getStorage(app);
+storage.maxUploadRetryTime = 5000;      // Fail fast on upload retries
+storage.maxOperationRetryTime = 5000;   // Fail fast on other storage operation retries
 
 // Initialize messaging only if supported (browser might not support it)
 export let messaging = null;
