@@ -7,7 +7,7 @@ export async function analyzeCrisis(type, description, location, facilityType = 
       throw new Error("Using mock key");
     }
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
     
     const prompt = `Emergency type: ${type}
 Description: ${description || 'None provided'}
@@ -55,7 +55,7 @@ export async function analyzeServiceRequest(text) {
       throw new Error("No API key configured");
     }
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
     const prompt = `Service request text: "${text}"
 

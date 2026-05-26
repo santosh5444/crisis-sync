@@ -7,7 +7,7 @@ export async function categorizeItem(title, description) {
       return ["General"]; // Fallback for mock
     }
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
     
     const prompt = `Item Title: ${title}
 Description: ${description || 'None provided'}
@@ -54,7 +54,7 @@ export async function findPotentialMatches(newItem, existingItems) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
     
     // We only want to match LOST with FOUND, and FOUND with LOST.
     const oppositeType = newItem.type === 'LOST' ? 'FOUND' : 'LOST';
