@@ -313,8 +313,39 @@ export default function GuestDashboard() {
     }
   };
 
+  const handleClearHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear your local history? This will hide these items from your dashboard but keep them in hospital emergency logs.")) return;
+    try {
+      const updates = {};
+      
+      // Clear past SOS
+      pastMySOS.forEach(crisis => {
+        updates[`crises/${user.buildingId}/${crisis.sosId}/hiddenFromPatient`] = true;
+      });
+
+      // Clear completed services
+      myServices.filter(s => s.status === 'COMPLETED').forEach(req => {
+        updates[`serviceRequests/${user.buildingId}/${req.requestId}/hiddenFromPatient`] = true;
+      });
+
+      // Clear resolved Lost & Found items
+      myLostAndFound.filter(i => i.status === 'RESOLVED').forEach(item => {
+        updates[`lostAndFound/${user.buildingId}/${item.itemId}/hiddenFromPatient`] = true;
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+      }
+      import('react-hot-toast').then(m => m.default.success("History cleared successfully."));
+    } catch (err) {
+      console.error("Failed to clear history", err);
+      import('react-hot-toast').then(m => m.default.error("Failed to clear history."));
+    }
+  };
+
   const activeMySOS = myCrises.find(c => c.status !== 'RESOLVED');
-  const pastMySOS = myCrises.filter(c => c.status === 'RESOLVED');
+  const pastMySOS = myCrises.filter(c => c.status === 'RESOLVED' && !c.hiddenFromPatient);
+
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 max-w-lg md:max-w-6xl mx-auto pb-24">
@@ -576,9 +607,17 @@ export default function GuestDashboard() {
         </section>
 
         {/* History */}
-        {(pastMySOS.length > 0 || myServices.filter(s => s.status === 'COMPLETED').length > 0 || myLostAndFound.filter(i => i.status === 'RESOLVED').length > 0) && (
+        {(pastMySOS.length > 0 || myServices.filter(s => s.status === 'COMPLETED' && !s.hiddenFromPatient).length > 0 || myLostAndFound.filter(i => i.status === 'RESOLVED' && !i.hiddenFromPatient).length > 0) && (
           <section className="mt-4">
-            <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider px-2">Your History</h3>
+            <div className="flex justify-between items-center mb-4 px-2">
+              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Your History</h3>
+              <button 
+                onClick={handleClearHistory}
+                className="text-xs text-text-secondary hover:text-alert-red font-semibold transition"
+              >
+                Clear History
+              </button>
+            </div>
             <div className="flex flex-col gap-3">
               {/* SOS History */}
               {pastMySOS.map(crisis => (
@@ -592,7 +631,7 @@ export default function GuestDashboard() {
               ))}
               
               {/* Services History */}
-              {myServices.filter(s => s.status === 'COMPLETED').map(req => (
+              {myServices.filter(s => s.status === 'COMPLETED' && !s.hiddenFromPatient).map(req => (
                 <div key={req.requestId} className="bg-card-bg border border-card-border p-4 rounded-xl flex justify-between items-center opacity-70">
                   <div>
                     <p className="font-bold text-sm">{req.type}</p>
@@ -603,7 +642,7 @@ export default function GuestDashboard() {
               ))}
 
               {/* Lost & Found History */}
-              {myLostAndFound.filter(i => i.status === 'RESOLVED').map(item => (
+              {myLostAndFound.filter(i => i.status === 'RESOLVED' && !i.hiddenFromPatient).map(item => (
                 <div key={item.itemId} className="bg-card-bg border border-card-border p-4 rounded-xl flex justify-between items-center opacity-70">
                   <div>
                     <p className="font-bold text-sm">{item.title} ({item.type})</p>

@@ -195,7 +195,10 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
                     )}
                   </div>
 
-                  {matches[item.itemId] && matches[item.itemId].length > 0 && (
+                  {matches[item.itemId] && matches[item.itemId].length > 0 && (isAdmin || (user?.userId && user?.userId !== 'unknown' && (item.reportedBy?.userId === user?.userId || matches[item.itemId].some(matchId => {
+                    const matchedItem = items.find(i => i.itemId === matchId);
+                    return matchedItem?.reportedBy?.userId === user?.userId;
+                  })))) && (
                     <div className="mb-4 bg-warning/20 border border-warning/50 text-warning p-3 rounded-lg text-xs flex flex-col gap-2 font-bold">
                       <div className="flex items-center gap-2">
                         <Sparkles size={16} className="animate-pulse" />
@@ -274,31 +277,8 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
                           <CheckCircle size={18} />
                         </button>
                       )}
-                      
-                      {!isAdmin && item.reportedBy?.userId !== user?.userId && (
-                        <button 
-                          onClick={() => {
-                            import('firebase/database').then(({ ref, update }) => {
-                              const activeBuildingId = user?.buildingId;
-                              if(!activeBuildingId) return;
-                              const note = window.prompt("Optional: Add a note (e.g. 'Handed at reception')");
-                              update(ref(db, `lostAndFound/${activeBuildingId}/${item.itemId}`), { 
-                                status: 'RESOLVED',
-                                resolvedBy: user?.name || 'A User',
-                                resolutionNote: note || ''
-                              });
-                              import('react-hot-toast').then(m => m.default.success(
-                                item.type === 'LOST' ? "Awesome! Thank you for finding it!" : "Great! Please contact the finder."
-                              ));
-                            });
-                          }}
-                          className="bg-success hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-[0_0_10px_rgba(0,200,83,0.4)] flex items-center"
-                        >
-                          {item.type === 'LOST' ? "I Found It!" : "That's Mine!"}
-                        </button>
-                      )}
 
-                      {!isAdmin && item.reportedBy?.userId === user?.userId && (
+                      {!isAdmin && user?.userId && user?.userId !== 'unknown' && item.reportedBy?.userId === user?.userId && (
                         <button 
                           onClick={() => {
                             import('firebase/database').then(({ ref, update }) => {
