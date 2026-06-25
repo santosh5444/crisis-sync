@@ -724,7 +724,7 @@ export default function GuestDashboard() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="bg-dark-bg/40 p-3 rounded-lg border border-card-border">
                     <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Urgency Level</p>
                     <span className={`px-2 py-0.5 rounded text-xs font-black inline-block ${
@@ -743,6 +743,12 @@ export default function GuestDashboard() {
                     <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Suggested Service</p>
                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-info/20 text-info border border-info/30 inline-block">
                       {triageResult.suggestedCategory}
+                    </span>
+                  </div>
+                  <div className="bg-dark-bg/40 p-3 rounded-lg border border-card-border">
+                    <p className="text-[10px] text-text-secondary uppercase font-bold mb-0.5">Suggested Responder</p>
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-success/20 text-success border border-success/30 inline-block">
+                      {triageResult.suggestedRole || 'Nurse'}
                     </span>
                   </div>
                 </div>

@@ -81,6 +81,7 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
   "isEmergency": true | false,
   "suggestedCategory": "NURSE" | "WHEELCHAIR" | "WATER" | "BATHROOM" | "MEDS" | "MEAL" | "COMFORT" | "CLEAN" | "OTHER",
   "urgency": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+  "suggestedRole": "Doctor" | "Nurse" | "Surgeon" | "Security" | "Pharmacist" | "Lab Technician" | "Receptionist" | "Housekeeping" | "Maintenance / IT",
   "englishTranslation": "string (translate to English if input is in another language, otherwise repeat input)",
   "flagReason": "string (brief reason for categorization/urgency)"
 }`;
@@ -94,7 +95,7 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [
-          { role: "system", content: "You are a hospital triage assistant. Respond ONLY with a valid JSON object matching the requested schema." },
+          { role: "system", content: "You are a hospital triage assistant. Respond ONLY with a valid JSON object matching the requested schema. Map the request to both the nearest generic service category and the most appropriate hospital responder role." },
           { role: "user", content: prompt }
         ],
         response_format: { type: "json_object" },
@@ -116,38 +117,56 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
     let isEmergency = false;
     let suggestedCategory = "OTHER";
     let urgency = "LOW";
+    let suggestedRole = "Nurse";
 
     if (lower.includes("pain") || lower.includes("chest") || lower.includes("breath") || lower.includes("bleed") || lower.includes("hurt") || lower.includes("fall")) {
       isEmergency = true;
       urgency = "CRITICAL";
       suggestedCategory = "NURSE";
+      suggestedRole = "Doctor";
     } else if (lower.includes("pill") || lower.includes("med") || lower.includes("medicine")) {
       suggestedCategory = "MEDS";
       urgency = "MEDIUM";
+      suggestedRole = "Pharmacist";
     } else if (lower.includes("food") || lower.includes("meal") || lower.includes("eat") || lower.includes("diet")) {
       suggestedCategory = "MEAL";
       urgency = "LOW";
+      suggestedRole = "Housekeeping";
     } else if (lower.includes("clean") || lower.includes("spill") || lower.includes("dirty") || lower.includes("sweep")) {
       suggestedCategory = "CLEAN";
       urgency = "MEDIUM";
+      suggestedRole = "Housekeeping";
     } else if (lower.includes("blanket") || lower.includes("pillow") || lower.includes("cold")) {
       suggestedCategory = "COMFORT";
       urgency = "LOW";
+      suggestedRole = "Nurse";
     } else if (lower.includes("water") || lower.includes("drink")) {
       suggestedCategory = "WATER";
       urgency = "LOW";
+      suggestedRole = "Housekeeping";
     } else if (lower.includes("toilet") || lower.includes("bathroom") || lower.includes("washroom")) {
       suggestedCategory = "BATHROOM";
       urgency = "MEDIUM";
+      suggestedRole = "Nurse";
     } else if (lower.includes("wheelchair") || lower.includes("walk")) {
       suggestedCategory = "WHEELCHAIR";
       urgency = "MEDIUM";
+      suggestedRole = "Nurse";
+    } else if (lower.includes("wifi") || lower.includes("internet") || lower.includes("tv") || lower.includes("light") || lower.includes("power")) {
+      suggestedCategory = "OTHER";
+      urgency = "LOW";
+      suggestedRole = "Maintenance / IT";
+    } else if (lower.includes("security") || lower.includes("fight") || lower.includes("threat") || lower.includes("steal") || lower.includes("intruder")) {
+      suggestedCategory = "OTHER";
+      urgency = "HIGH";
+      suggestedRole = "Security Officer";
     }
 
     return {
       isEmergency,
       suggestedCategory,
       urgency,
+      suggestedRole,
       englishTranslation: text,
       flagReason: `Local matching rule-based fallback (Error: ${error.message || error})`
     };
