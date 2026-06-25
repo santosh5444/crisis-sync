@@ -1,14 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GEMINI_API_KEY } from "../utils/constants";
+import { GROQ_API_KEY } from "../utils/constants";
 
 export async function analyzeCrisis(type, description, location, facilityType = 'Hospital') {
   try {
-    if (GEMINI_API_KEY === "MOCK_GEMINI_KEY") {
-      throw new Error("Using mock key");
+    if (!GROQ_API_KEY || GROQ_API_KEY === "MOCK_GEMINI_KEY" || GROQ_API_KEY === "MOCK_GROQ_KEY") {
+      throw new Error("No Groq API key configured");
     }
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
-    
+
     const prompt = `Emergency type: ${type}
 Description: ${description || 'None provided'}
 Location: ${location}
@@ -23,11 +20,33 @@ Analyze and return JSON exactly matching this format:
   "estimatedResponseTime": 120
 }`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are an emergency response AI assistant. Respond ONLY with a valid JSON object matching the requested schema." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Groq API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices[0].message.content;
     return JSON.parse(text);
   } catch (error) {
-    console.warn("Gemini Analysis failed, using rule-based fallback.", error);
+    console.warn("Groq Analysis failed, using rule-based fallback.", error);
     // Fallback logic
     let severity = "MEDIUM";
     let autoCallService = "NONE";
@@ -51,11 +70,9 @@ Analyze and return JSON exactly matching this format:
 
 export async function analyzeServiceRequest(text) {
   try {
-    if (GEMINI_API_KEY === "MOCK_GEMINI_KEY" || !GEMINI_API_KEY) {
-      throw new Error("No API key configured");
+    if (!GROQ_API_KEY || GROQ_API_KEY === "MOCK_GEMINI_KEY" || GROQ_API_KEY === "MOCK_GROQ_KEY") {
+      throw new Error("No Groq API key configured");
     }
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
     const prompt = `Service request text: "${text}"
 
@@ -68,11 +85,33 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
   "flagReason": "string (brief reason for categorization/urgency)"
 }`;
 
-    const result = await model.generateContent(prompt);
-    const textResult = result.response.text();
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are a hospital triage assistant. Respond ONLY with a valid JSON object matching the requested schema." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Groq API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    const textResult = data.choices[0].message.content;
     return JSON.parse(textResult);
   } catch (error) {
-    console.warn("AI Triage failed, using fallback.", error);
+    console.warn("Groq Triage failed, using fallback.", error);
     const lower = text.toLowerCase();
     let isEmergency = false;
     let suggestedCategory = "OTHER";
