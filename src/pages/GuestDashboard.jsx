@@ -300,7 +300,11 @@ export default function GuestDashboard() {
     if (!window.confirm("Are you sure you want to delete this report?")) return;
     try {
       const fileRef = storageRef(storage, filePath);
-      await deleteObject(fileRef);
+      try {
+        await deleteObject(fileRef);
+      } catch (storageErr) {
+        console.warn("Storage deletion warning/failure:", storageErr);
+      }
       await remove(ref(db, `guests/${user.buildingId}/${user.userId}/reports/${reportId}`));
       import('react-hot-toast').then(m => m.default.success("Report deleted successfully."));
     } catch (err) {
