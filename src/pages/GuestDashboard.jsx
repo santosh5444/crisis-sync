@@ -557,16 +557,18 @@ export default function GuestDashboard() {
           </h3>
           <div className="grid grid-cols-2 gap-3 mb-6">
             {HOSPITAL_SERVICES.map(service => (
-              <button 
+              <motion.button 
                 key={service.id}
                 onClick={() => handleServiceRequest(service.label)}
-                className="bg-dark-bg/60 border border-card-border hover:border-primary-red p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all duration-200 gap-2 hover:brightness-110 active:brightness-90 shadow-md"
+                whileHover={{ y: -3, boxShadow: '0 8px 30px rgba(0,0,0,0.15)', borderColor: 'rgba(255,24,68,0.5)' }}
+                whileTap={{ scale: 0.96 }}
+                className="bg-dark-bg/60 border border-card-border p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all duration-200 gap-2 shadow-md"
               >
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${service.color.split(' ').slice(0, 2).join(' ')}`}>
                   {service.icon}
                 </div>
                 <span className="text-xs font-bold text-text-secondary transition-colors">{service.label}</span>
-              </button>
+              </motion.button>
             ))}
           </div>
 
@@ -583,13 +585,15 @@ export default function GuestDashboard() {
                 className="w-full bg-dark-bg border border-card-border rounded-lg p-3 text-white focus:outline-none focus:border-info text-sm h-20 resize-none transition-colors"
                 required
               />
-              <button
+              <motion.button
                 type="submit"
                 disabled={aiLoading || !customText.trim()}
+                whileHover={aiLoading || !customText.trim() ? {} : { scale: 1.01 }}
+                whileTap={aiLoading || !customText.trim() ? {} : { scale: 0.98 }}
                 className={`w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md ${
                   aiLoading 
                     ? 'bg-info/20 text-info cursor-not-allowed'
-                    : 'bg-info hover:bg-blue-600 text-white shadow-info/20 active:brightness-90'
+                    : 'bg-info hover:bg-blue-600 text-white shadow-info/20'
                 }`}
               >
                 {aiLoading ? (
@@ -601,7 +605,7 @@ export default function GuestDashboard() {
                     <Sparkles size={16} /> Send Request
                   </>
                 )}
-              </button>
+              </motion.button>
             </form>
           </div>
         </section>

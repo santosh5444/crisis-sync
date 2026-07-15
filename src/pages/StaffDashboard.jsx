@@ -383,6 +383,8 @@ export default function StaffDashboard() {
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.9, opacity: 0 }}
+                  whileHover={{ y: -4, boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}
+                  transition={{ duration: 0.2 }}
                   className={`bg-card-bg border p-5 rounded-xl flex flex-col justify-between ${
                     req.status === 'URGENT' 
                       ? 'border-alert-red shadow-[0_0_10px_rgba(255,24,68,0.1)]' 
@@ -438,9 +440,11 @@ export default function StaffDashboard() {
                     </div>
                   </div>
                   
-                  <button 
+                  <motion.button 
                     onClick={() => handleAcceptService(req.requestId)}
                     disabled={!onlineStatus}
+                    whileHover={!onlineStatus ? {} : { scale: 1.01 }}
+                    whileTap={!onlineStatus ? {} : { scale: 0.98 }}
                     className={`w-full py-3 rounded-lg font-bold transition-all shadow-lg ${
                       !onlineStatus 
                         ? 'bg-card-border text-text-secondary cursor-not-allowed'
@@ -450,7 +454,7 @@ export default function StaffDashboard() {
                     }`}
                   >
                     {onlineStatus ? 'Accept Request' : 'Offline'}
-                  </button>
+                  </motion.button>
                 </motion.div>
               ))}
             </AnimatePresence>
