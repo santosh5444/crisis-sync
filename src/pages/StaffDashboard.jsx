@@ -152,9 +152,24 @@ export default function StaffDashboard() {
     }
   };
 
+  const isRoleMatching = (staffProfession, suggestedRole) => {
+    if (!suggestedRole) return true; // Show if AI didn't specify a role
+    
+    // Clean emojis/special characters and convert to lowercase
+    const cleanStaff = staffProfession.replace(/[^\w\s/]/g, '').trim().toLowerCase();
+    const cleanSuggested = suggestedRole.replace(/[^\w\s/]/g, '').trim().toLowerCase();
+    
+    // Exact match or containment (handles "Security Officer" matching "Security")
+    return cleanStaff.includes(cleanSuggested) || cleanSuggested.includes(cleanStaff);
+  };
+
   const pendingCrises = crises.filter(c => c.status === 'PENDING');
   const verifiedCrises = crises.filter(c => c.status === 'VERIFIED_REAL');
-  const pendingServices = services.filter(s => s.status === 'PENDING' || s.status === 'URGENT');
+  const pendingServices = services.filter(s => {
+    const isPendingOrUrgent = s.status === 'PENDING' || s.status === 'URGENT';
+    if (!isPendingOrUrgent) return false;
+    return isRoleMatching(user.profession || '', s.aiAnalysis?.suggestedRole);
+  });
   const myServices = services.filter(s => s.status === 'ACCEPTED' && s.acceptedBy?.staffId === (user.staffId || user.userId));
 
   if (!user || user.role !== 'staff') {
@@ -351,7 +366,10 @@ export default function StaffDashboard() {
         </section>
       ) : (
         <section className="mb-8 border-t-2 border-dashed border-card-border pt-8">
-        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-warning"><Clock size={20} /> Open Service Requests</h2>
+        <div className="mb-4">
+          <h2 className="text-lg font-bold mb-1 flex items-center gap-2 text-warning"><Clock size={20} /> Open Service Requests</h2>
+          <p className="text-xs text-text-secondary italic">Showing requests routed for your role ({user.profession})</p>
+        </div>
         {pendingServices.length === 0 ? (
           <div className="text-center p-8 border border-dashed border-card-border rounded-xl text-text-secondary">
             No pending requests.
