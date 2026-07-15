@@ -44,7 +44,7 @@ Return ONLY the JSON array exactly matching this format:
   }
 }
 
-function runLocalMatchingFallback(newItem, existingItems) {
+export function runLocalMatchingFallback(newItem, existingItems) {
   const oppositeType = newItem.type === 'LOST' ? 'FOUND' : 'LOST';
   const candidates = existingItems.filter(item => item.type === oppositeType && item.status === 'OPEN');
   
@@ -97,9 +97,13 @@ Here is a list of open ${oppositeType} items:
 ${candidatesJson}
 
 Analyze if the new item is a highly probable match with any of the existing items. A match means the LOST item is likely the exact same physical object as the FOUND item.
-Return a JSON array of IDs of the existing items that are potential matches. If none match, return an empty array [].
-Return ONLY the JSON array exactly matching this format:
-["id1", "id2"]`;
+Note: Patients often misremember where they lost an item, or items can be carried to other floors/areas by staff. Therefore, prioritize title and description matches (especially unique physical features like colors, brands, or zippers) over strict location matches.
+
+Return a JSON object containing an array of matching item IDs under the key "matches". If none match, return an empty array under "matches".
+Return ONLY the JSON object matching this format:
+{
+  "matches": ["id1", "id2"]
+}`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -110,7 +114,7 @@ Return ONLY the JSON array exactly matching this format:
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [
-          { role: "system", content: "You are an AI matching assistant for lost and found items. Respond ONLY with a valid JSON array of string IDs." },
+          { role: "system", content: "You are an AI matching assistant for lost and found items. Respond ONLY with a valid JSON object containing a 'matches' array." },
           { role: "user", content: prompt }
         ],
         response_format: { type: "json_object" },
@@ -125,7 +129,16 @@ Return ONLY the JSON array exactly matching this format:
 
     const data = await response.json();
     const text = data.choices[0].message.content;
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    
+    // Support both direct array output and the wrapped object format
+    if (parsed && Array.isArray(parsed.matches)) {
+      return parsed.matches;
+    }
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return [];
   } catch (error) {
     console.warn("Groq Matching failed, using local matching fallback.", error);
     return runLocalMatchingFallback(newItem, existingItems);

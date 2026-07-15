@@ -4,7 +4,7 @@ import { ref, onValue } from 'firebase/database';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, MapPin, Tag, Image as ImageIcon, Sparkles, CheckCircle, RefreshCw } from 'lucide-react';
-import { findPotentialMatches } from '../services/lostAndFoundAI';
+import { findPotentialMatches, runLocalMatchingFallback } from '../services/lostAndFoundAI';
 
 export default function LostAndFoundFeed({ isAdmin = false }) {
   const { user } = useAppContext();
@@ -40,6 +40,19 @@ export default function LostAndFoundFeed({ isAdmin = false }) {
   }, [user, isAdmin]);
 
   const detectMatches = async (openItems) => {
+    // 1. Instantly calculate baseline matches for all items using local fallback
+    const initialMatches = {};
+    for (let i = 0; i < openItems.length; i++) {
+      const item = openItems[i];
+      const others = openItems.filter((_, idx) => idx !== i);
+      const matchIds = runLocalMatchingFallback(item, others);
+      if (matchIds && matchIds.length > 0) {
+        initialMatches[item.itemId] = matchIds;
+      }
+    }
+    setMatches(initialMatches);
+
+    // 2. Refine with AI for the latest item
     const latestItem = openItems[0];
     if (latestItem && openItems.length > 1) {
       if (lastCheckedItemIdRef.current === latestItem.itemId) {
