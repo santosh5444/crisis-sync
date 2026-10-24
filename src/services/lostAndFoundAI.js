@@ -1,4 +1,4 @@
-import { GROQ_API_KEY } from "../utils/constants";
+import { GROQ_API_KEY, GROQ_MODEL } from "../utils/constants";
 
 export async function categorizeItem(title, description) {
   try {
@@ -9,20 +9,23 @@ export async function categorizeItem(title, description) {
     const prompt = `Item Title: ${title}
 Description: ${description || 'None provided'}
 
-Analyze the item and return a JSON array of 1 to 3 relevant category tags (e.g., ["Electronics", "Phones"], ["Keys", "Vehicle"], ["Bags", "Luggage"], ["Jewelry", "Accessories"]). 
-Return ONLY the JSON array exactly matching this format:
-["Tag1", "Tag2"]`;
+Analyze the item and return a JSON object with a "categories" array containing 1 to 3 relevant category tags (e.g., ["Electronics", "Phones"], ["Keys", "Vehicle"], ["Bags", "Luggage"], ["Jewelry", "Accessories"]). 
+Return ONLY the JSON object matching this format:
+{
+  "categories": ["Tag1", "Tag2"]
+}`;
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const primaryModel = GROQ_MODEL || "qwen/qwen3.8-27b";
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: primaryModel,
         messages: [
-          { role: "system", content: "You are an AI categorization assistant. Respond ONLY with a valid JSON array of category strings." },
+          { role: "system", content: "You are an AI categorization assistant. Respond ONLY with a valid JSON object containing a 'categories' array of category strings." },
           { role: "user", content: prompt }
         ],
         response_format: { type: "json_object" },
@@ -31,13 +34,40 @@ Return ONLY the JSON array exactly matching this format:
     });
 
     if (!response.ok) {
+      const fallbackModel = primaryModel === "openai/gpt-oss-20b" ? "qwen/qwen3.8-27b" : "openai/gpt-oss-20b";
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [
+            { role: "system", content: "You are an AI categorization assistant. Respond ONLY with a valid JSON object containing a 'categories' array of category strings." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+    }
+
+    if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Groq API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
     const text = data.choices[0].message.content;
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    if (parsed && Array.isArray(parsed.categories)) {
+      return parsed.categories;
+    }
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return ["General"];
   } catch (error) {
     console.warn("Groq Categorization failed, using default 'General'.", error);
     return ["General"];
@@ -105,14 +135,15 @@ Return ONLY the JSON object matching this format:
   "matches": ["id1", "id2"]
 }`;
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const primaryModel = GROQ_MODEL || "qwen/qwen3.8-27b";
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: primaryModel,
         messages: [
           { role: "system", content: "You are an AI matching assistant for lost and found items. Respond ONLY with a valid JSON object containing a 'matches' array." },
           { role: "user", content: prompt }
@@ -121,6 +152,26 @@ Return ONLY the JSON object matching this format:
         temperature: 0.1
       })
     });
+
+    if (!response.ok) {
+      const fallbackModel = primaryModel === "openai/gpt-oss-20b" ? "qwen/qwen3.8-27b" : "openai/gpt-oss-20b";
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [
+            { role: "system", content: "You are an AI matching assistant for lost and found items. Respond ONLY with a valid JSON object containing a 'matches' array." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

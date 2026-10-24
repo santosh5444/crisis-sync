@@ -33,6 +33,7 @@ export const HOSPITAL_SERVICES = [
 ];
 
 export const DEFAULT_BUILDING_ID = "";
-export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('VITE_GEMINI_API_KEY') || "";
-export const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('VITE_GROQ_API_KEY') || "";
+export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || (typeof window !== "undefined" ? localStorage.getItem('VITE_GEMINI_API_KEY') : "") || "";
+export const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || (typeof window !== "undefined" ? (localStorage.getItem('VITE_GROQ_API_KEY') || localStorage.getItem('GROQ_API_KEY') || localStorage.getItem('VITE_GEMINI_API_KEY')) : "") || "";
+export const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || "qwen/qwen3.8-27b";
 

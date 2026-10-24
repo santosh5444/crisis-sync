@@ -1,4 +1,4 @@
-import { GROQ_API_KEY } from "../utils/constants";
+import { GROQ_API_KEY, GROQ_MODEL } from "../utils/constants";
 
 export async function analyzeCrisis(type, description, location, facilityType = 'Hospital') {
   try {
@@ -20,14 +20,15 @@ Analyze and return JSON exactly matching this format:
   "estimatedResponseTime": 120
 }`;
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const primaryModel = GROQ_MODEL || "qwen/qwen3.8-27b";
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: primaryModel,
         messages: [
           { role: "system", content: "You are an emergency response AI assistant. Respond ONLY with a valid JSON object matching the requested schema." },
           { role: "user", content: prompt }
@@ -36,6 +37,27 @@ Analyze and return JSON exactly matching this format:
         temperature: 0.1
       })
     });
+
+    if (!response.ok) {
+      // Fallback model if primary model is unavailable or rate limited
+      const fallbackModel = primaryModel === "openai/gpt-oss-20b" ? "qwen/qwen3.8-27b" : "openai/gpt-oss-20b";
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [
+            { role: "system", content: "You are an emergency response AI assistant. Respond ONLY with a valid JSON object matching the requested schema." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -86,14 +108,15 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
   "flagReason": "string (brief reason for categorization/urgency)"
 }`;
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const primaryModel = GROQ_MODEL || "qwen/qwen3.8-27b";
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: primaryModel,
         messages: [
           { role: "system", content: "You are a hospital triage assistant. Respond ONLY with a valid JSON object matching the requested schema. Map the request to both the nearest generic service category and the most appropriate hospital responder role." },
           { role: "user", content: prompt }
@@ -102,6 +125,26 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
         temperature: 0.1
       })
     });
+
+    if (!response.ok) {
+      const fallbackModel = primaryModel === "openai/gpt-oss-20b" ? "qwen/qwen3.8-27b" : "openai/gpt-oss-20b";
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [
+            { role: "system", content: "You are a hospital triage assistant. Respond ONLY with a valid JSON object matching the requested schema. Map the request to both the nearest generic service category and the most appropriate hospital responder role." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
