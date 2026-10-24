@@ -215,3 +215,102 @@ Analyze this hospital patient/visitor service request and return JSON exactly ma
     };
   }
 }
+
+export async function summarizePatientMedicalProfile(patientData) {
+  try {
+    if (!GROQ_API_KEY || GROQ_API_KEY === "MOCK_GEMINI_KEY" || GROQ_API_KEY === "MOCK_GROQ_KEY") {
+      throw new Error("No Groq API key configured");
+    }
+
+    const reportNames = patientData.reports 
+      ? (Array.isArray(patientData.reports) 
+          ? patientData.reports.map(r => r.name).join(", ") 
+          : Object.values(patientData.reports).map(r => r.name).join(", "))
+      : "None uploaded";
+
+    const prompt = `You are an AI Clinical Assistant summarizing a patient's medical profile for an attending doctor during a hospital consultation.
+
+Patient Name: ${patientData.name || 'Anonymous'}
+Room/Bed: ${patientData.roomNumber || 'Not specified'}
+Medications & Self-reported Health Data:
+"${patientData.medicationList || 'No medications listed by patient.'}"
+Uploaded Documents / Reports:
+"${reportNames}"
+
+Analyze this medical data and return ONLY a valid JSON object matching this schema:
+{
+  "criticalAlerts": ["string (e.g. Allergy: Penicillin or High Blood Pressure flag)"],
+  "chronicConditions": ["string (e.g. Type 2 Diabetes, Asthma)"],
+  "currentMedications": ["string (e.g. Metformin 500mg)"],
+  "clinicalActionPoints": [
+    "string (key points the doctor should investigate or ask during this consultation)"
+  ],
+  "quickSummary": "string (1-2 sentence executive briefing for the doctor)"
+}`;
+
+    const primaryModel = GROQ_MODEL || "qwen/qwen3.8-27b";
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: primaryModel,
+        messages: [
+          { role: "system", content: "You are an AI medical assistant for doctors. Respond ONLY with a valid JSON object matching the requested schema." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      })
+    });
+
+    if (!response.ok) {
+      const fallbackModel = primaryModel === "openai/gpt-oss-20b" ? "qwen/qwen3.8-27b" : "openai/gpt-oss-20b";
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [
+            { role: "system", content: "You are an AI medical assistant for doctors. Respond ONLY with a valid JSON object matching the requested schema." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Groq API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
+  } catch (error) {
+    console.warn("AI Medical Summary failed, using rule-based fallback.", error);
+    const meds = patientData.medicationList || '';
+    const lower = meds.toLowerCase();
+    const criticalAlerts = [];
+    if (lower.includes('allergy') || lower.includes('allergic')) {
+      criticalAlerts.push("Patient reported allergy (Review active text)");
+    }
+    return {
+      criticalAlerts,
+      chronicConditions: ["Review patient notes"],
+      currentMedications: meds ? [meds.slice(0, 80)] : ["None reported"],
+      clinicalActionPoints: [
+        "Review uploaded reports directly with patient.",
+        "Confirm current dosages and verify any known drug allergies."
+      ],
+      quickSummary: `Patient ${patientData.name || ''} consultation record. Review listed medical details above.`
+    };
+  }
+}
+

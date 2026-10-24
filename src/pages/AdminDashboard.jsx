@@ -8,13 +8,14 @@ import { motion } from 'framer-motion';
 import { 
   ShieldAlert, Users, HardHat, BarChart3, PhoneCall, 
   LogOut, AlertTriangle, CheckCircle, Clock, MapPin, Phone, QrCode, Search,
-  X, FileText, Loader2
+  X, FileText, Loader2, Sparkles, AlertCircle
 } from 'lucide-react';
 import Logo from '../components/Logo';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { QRCodeSVG } from 'qrcode.react';
 import { logoutAdmin } from '../firebase/auth';
 import LostAndFoundFeed from '../components/LostAndFoundFeed';
+import { summarizePatientMedicalProfile } from '../services/geminiService';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -37,9 +38,12 @@ export default function AdminDashboard() {
   const [selectedPatientName, setSelectedPatientName] = useState('');
   const [patientMedicalProfile, setPatientMedicalProfile] = useState(null);
   const [loadingMedicalProfile, setLoadingMedicalProfile] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [generatingAiSummary, setGeneratingAiSummary] = useState(false);
 
   // Load patient medical profile on demand
   useEffect(() => {
+    setAiSummary(null);
     if (!selectedPatientId || !buildingId) {
       setPatientMedicalProfile(null);
       return;
@@ -54,6 +58,26 @@ export default function AdminDashboard() {
     });
     return () => unsubscribe();
   }, [selectedPatientId, buildingId]);
+
+  const handleGenerateAiSummary = async () => {
+    if (!patientMedicalProfile) return;
+    setGeneratingAiSummary(true);
+    try {
+      const summary = await summarizePatientMedicalProfile({
+        name: selectedPatientName || patientMedicalProfile.name,
+        roomNumber: patientMedicalProfile.roomNumber,
+        medicationList: patientMedicalProfile.medicationList,
+        reports: patientMedicalProfile.reports
+      });
+      setAiSummary(summary);
+      toast.success("AI Clinical Briefing ready!");
+    } catch (err) {
+      console.error("AI Summary generation failed", err);
+      toast.error("Failed to generate AI clinical summary");
+    } finally {
+      setGeneratingAiSummary(false);
+    }
+  };
 
   // Logout
   const handleLogout = async () => {
@@ -680,22 +704,22 @@ export default function AdminDashboard() {
       {/* Patient Medical Profile Modal */}
       {selectedPatientId && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-card-bg border border-card-border w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
+          <div className="bg-card-bg border border-card-border w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
             <button 
               onClick={() => setSelectedPatientId(null)} 
-              className="absolute top-4 right-4 text-text-secondary hover:text-white"
+              className="absolute top-4 right-4 text-text-secondary hover:text-white z-10"
             >
               <X size={24} />
             </button>
             
-            <div className="bg-info/20 p-6 border-b border-info/30">
+            <div className="bg-info/20 p-6 border-b border-info/30 flex-shrink-0">
               <h2 className="text-xl font-bold text-info flex items-center gap-2">
                 ⚕️ Medical Profile: {selectedPatientName}
               </h2>
-              <p className="text-xs text-text-secondary mt-1">Accessing hospital file vault...</p>
+              <p className="text-xs text-text-secondary mt-1">Accessing hospital file vault & AI Clinical Review...</p>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
               {loadingMedicalProfile ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 size={32} className="animate-spin text-info mb-2" />
@@ -703,6 +727,73 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <>
+                  {/* AI Clinical Briefing (Groq) */}
+                  <div className="bg-gradient-to-r from-info/15 via-card-bg to-dark-bg border border-info/40 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-info">
+                        <Sparkles size={16} className="text-info animate-pulse" />
+                        <span>AI Clinical Briefing (Groq)</span>
+                      </div>
+                      <button
+                        onClick={handleGenerateAiSummary}
+                        disabled={generatingAiSummary}
+                        className="px-3 py-1 bg-info hover:bg-blue-600 text-white font-bold text-xs rounded-md shadow-sm transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        {generatingAiSummary ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" /> Analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={12} /> {aiSummary ? "Re-analyze" : "Generate Briefing"}
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {!aiSummary && !generatingAiSummary && (
+                      <p className="text-xs text-text-secondary italic">
+                        Click &quot;Generate Briefing&quot; to have Groq distill medications, chronic conditions, and reports into key consultation takeaways.
+                      </p>
+                    )}
+
+                    {aiSummary && (
+                      <div className="mt-3 space-y-2.5 text-xs">
+                        {aiSummary.quickSummary && (
+                          <div className="text-white font-medium bg-black/40 p-2.5 rounded-lg border border-card-border">
+                            {aiSummary.quickSummary}
+                          </div>
+                        )}
+
+                        {aiSummary.criticalAlerts && aiSummary.criticalAlerts.length > 0 && (
+                          <div className="bg-alert-red/10 border border-alert-red/30 p-2.5 rounded-lg">
+                            <span className="font-bold text-alert-red flex items-center gap-1 mb-1">
+                              <AlertCircle size={12} /> Critical Flags / Allergies:
+                            </span>
+                            <ul className="list-disc list-inside text-white space-y-0.5 font-medium">
+                              {aiSummary.criticalAlerts.map((alert, i) => (
+                                <li key={i}>{alert}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {aiSummary.clinicalActionPoints && aiSummary.clinicalActionPoints.length > 0 && (
+                          <div className="bg-info/10 border border-info/30 p-2.5 rounded-lg">
+                            <span className="font-bold text-info block mb-1">
+                              🩺 Doctor Focus Points for Checkup:
+                            </span>
+                            <ul className="list-disc list-inside text-white space-y-1">
+                              {aiSummary.clinicalActionPoints.map((point, i) => (
+                                <li key={i}>{point}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Medications & Conditions */}
                   <div>
                     <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Active Medications & Conditions</h3>
@@ -747,7 +838,7 @@ export default function AdminDashboard() {
               )}
             </div>
             
-            <div className="p-4 bg-black/20 border-t border-card-border flex justify-end">
+            <div className="p-4 bg-black/20 border-t border-card-border flex justify-end flex-shrink-0">
               <button 
                 onClick={() => setSelectedPatientId(null)} 
                 className="px-4 py-2 bg-dark-bg border border-card-border hover:bg-card-border rounded font-bold text-sm text-white transition"
